@@ -3,26 +3,11 @@ import path from 'path';
 
 export const exampleFiles: Record<string, string> = {
     'example.mm': [
-        '$c 0 + = -> ( ) term wff |- $.',
-        '$v t r s P Q $.',
-
-        'tt $f term t $.',
-        'tr $f term r $.',
-        'ts $f term s $.',
+        '$c -> ( ) wff |- $.',
+        '$v P Q $.',
         'wp $f wff P $.',
         'wq $f wff Q $.',
-        'tze $a term 0 $.',
-
-        'tpl $a term ( t + r ) $.',
-
-        'weq $a wff t = r $.',
-
         'wim $a wff ( P -> Q ) $.',
-
-        'a1 $a |- ( t = r -> ( t = s -> r = s ) ) $.',
-
-        'a2 $a |- ( t + 0 ) = t $.',
-
         '${',
         '  min $e |- P $.',
         '  maj $e |- ( P -> Q ) $.',
@@ -39,9 +24,15 @@ export const exampleFiles: Record<string, string> = {
     ].join('\n'),
 
     'unified.mmp': [
-        'h1::test.1         |- ( P -> Q )',
-        'h2::test.2         |- P',
-        'qed:2,1:ax-mp      |- Q',
+        '$theorem ununified',
+        '',
+        '* MissingComment',
+        '',
+        'h1::test.2          |- ( P -> Q )',
+        'h2::test.1          |- P',
+        'qed:2,1:mp         |- Q',
+        '',
+        '$=    wp wq test.1 test.2 mp $.',
     ].join('\n'),
 };
 
