@@ -10,6 +10,8 @@ export const createUnifier: CreateUnifier = (mmData: string) => {
     if (mmData === exampleFiles['example.mm']) {
         return {
             unify: (mmpData: string): string => {
+                mmpData = mmpData.replaceAll('\r', '');
+
                 if (
                     mmpData === exampleFiles['ununified.mmp'] ||
                     mmpData === exampleFiles['unified.mmp']
@@ -17,14 +19,14 @@ export const createUnifier: CreateUnifier = (mmData: string) => {
                     return exampleFiles['unified.mmp'];
                 } else {
                     throw new Error(
-                        'unify: called with mmpData which yamma-unifier mock did not recognise',
+                        'unify: called with mmpData which yamma-unifier mock did not recognize',
                     );
                 }
             },
         };
     } else {
         throw new Error(
-            'createUnifier: called with mmData which yamma-unifier mock did not recognise',
+            'createUnifier: called with mmData which yamma-unifier mock did not recognize',
         );
     }
 };
