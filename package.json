@@ -20,6 +20,7 @@
     "homepage": "https://github.com/Antony74/yamma-unifier-cli#readme",
     "description": "",
     "devDependencies": {
+        "@babel/preset-typescript": "^7.27.1",
         "@types/jest": "^30.0.0",
         "@types/node": "^24.5.2",
         "jest": "^30.2.0",

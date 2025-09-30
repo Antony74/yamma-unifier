@@ -1,4 +1,7 @@
-export const exampleFiles = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.exampleFiles = void 0;
+exports.exampleFiles = {
     'example.mm': [
         '$c 0 + = -> ( ) term wff |- $.',
         '$v t r s P Q $.',
@@ -40,3 +43,4 @@ export const exampleFiles = {
         '$=    wp wq test.1 test.2 mp $.',
     ].join('\n'),
 };
+//# sourceMappingURL=examples.js.map
