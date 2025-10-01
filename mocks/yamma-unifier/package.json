@@ -6,7 +6,6 @@
         "prettier": "prettier --write .",
         "start": "tsc"
     },
-    "type": "module",
     "keywords": [],
     "author": "Antony74",
     "license": "CC0-1.0",
@@ -18,5 +17,6 @@
     "prettier": {
         "tabWidth": 4,
         "singleQuote": true
-    }
+    },
+    "type": "commonjs"
 }

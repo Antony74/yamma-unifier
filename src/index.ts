@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // e.g. npm start examples/example.mm examples/ununified.mmp
 // e.g. yammau examples/example.mm examples/ununified.mmp
 
