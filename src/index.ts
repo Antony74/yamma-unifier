@@ -15,17 +15,23 @@ const main = async () => {
     const [_program, _script, mmFilename, ...mmpFilenames] = process.argv;
 
     try {
+        console.log(`reading ${mmFilename}`);
         const mmData = await fsp.readFile(mmFilename, { encoding: 'utf-8' });
 
+        console.log(`parsing ${mmFilename}`);
         const unifier = createUnifier(mmData);
 
         for (const mmpFilename of mmpFilenames) {
+            console.log(`reading ${mmpFilename}`);
+
             const mmpUnunifiedData = await fsp.readFile(mmpFilename, {
                 encoding: 'utf-8',
             });
 
+            console.log(`unifying ${mmpFilename}`);
             const mmpUnifiedData = unifier.unify(mmpUnunifiedData);
 
+            console.log(`writing ${mmpFilename}`);
             await fsp.writeFile(mmpFilename, mmpUnifiedData);
         }
     } catch (e) {
@@ -36,6 +42,8 @@ const main = async () => {
             throw e;
         }
     }
+
+    console.log('done');
 };
 
 main();

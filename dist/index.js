@@ -24,13 +24,18 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
     }
     const [_program, _script, mmFilename, ...mmpFilenames] = process.argv;
     try {
+        console.log(`reading ${mmFilename}`);
         const mmData = yield promises_1.default.readFile(mmFilename, { encoding: 'utf-8' });
+        console.log(`parsing ${mmFilename}`);
         const unifier = (0, yamma_unifier_1.createUnifier)(mmData);
         for (const mmpFilename of mmpFilenames) {
+            console.log(`reading ${mmpFilename}`);
             const mmpUnunifiedData = yield promises_1.default.readFile(mmpFilename, {
                 encoding: 'utf-8',
             });
+            console.log(`unifying ${mmpFilename}`);
             const mmpUnifiedData = unifier.unify(mmpUnunifiedData);
+            console.log(`writing ${mmpFilename}`);
             yield promises_1.default.writeFile(mmpFilename, mmpUnifiedData);
         }
     }
@@ -43,5 +48,6 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
             throw e;
         }
     }
+    console.log('done');
 });
 main();
