@@ -26,20 +26,19 @@
     "devDependencies": {
         "@babel/preset-typescript": "^7.27.1",
         "@types/jest": "^30.0.0",
+        "@types/nearley": "^2.11.5",
         "@types/node": "^24.5.2",
         "jest": "^30.2.0",
         "prettier": "^3.6.2",
         "rimraf": "^6.0.1",
         "ts-jest": "^29.4.4",
-        "typescript": "^5.9.2"
+        "tsx": "^4.20.6",
+        "typescript": "^5.9.2",
+        "yamma-server": "https://gitpkg.vercel.app/glacode/yamma/server?master"
     },
     "prettier": {
         "tabWidth": 4,
         "singleQuote": true
-    },
-    "dependencies": {
-        "tsx": "^4.20.6",
-        "yamma-unifier": "file:mocks/yamma-unifier"
     },
     "type": "commonjs"
 }

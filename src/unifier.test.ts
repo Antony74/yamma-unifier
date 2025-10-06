@@ -1,4 +1,4 @@
-import { createUnifier } from 'yamma-unifier';
+import { createUnifier } from './unifier';
 import { exampleFiles } from './examples';
 
 describe(`yamma-unifier`, () => {

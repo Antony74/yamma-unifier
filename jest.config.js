@@ -8,4 +8,8 @@ module.exports = {
     transform: {
         ...tsJestTransformCfg,
     },
+    testMatch: ['<rootDir>/src/**/*.test.ts'],
+    transformIgnorePatterns: [
+        '/node_modules/(?!yamma-server)',
+    ],
 };
