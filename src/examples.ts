@@ -26,7 +26,7 @@ export const exampleFiles = {
         '  weq wim tt a2 tt tze tpl tt tt a1 mp mp $.',
     ].join('\n'),
 
-    'bad1.mm': '(%',
+    'bad1.mm': '$(',
 
     'ununified.mmp': [
         'h1::test.2       |- ( P -> Q )',

@@ -53,15 +53,15 @@ kindToPrefixMap.set('class', 'C');
 kindToPrefixMap.set('setvar', 'S');
 
 export const createUnifier: CreateUnifier = (mmData: string) => {
-    const mp2MmParser = new MmParser(globalState);
-    mp2MmParser.ParseText(mmData);
-    mp2MmParser.createParseNodesForAssertionsSync();
+    const mmParser = new MmParser(globalState);
+    mmParser.ParseText(mmData);
+    mmParser.createParseNodesForAssertionsSync();
 
     return {
         unify: (mmpData: string) => {
             const mmpParserParams: IMmpParserParams = {
                 textToParse: mmpData,
-                mmParser: mp2MmParser,
+                mmParser,
                 workingVars: new WorkingVars(kindToPrefixMap),
             };
             const mmpParser: MmpParser = new MmpParser(mmpParserParams);
