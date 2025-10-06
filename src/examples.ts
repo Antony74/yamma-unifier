@@ -45,6 +45,8 @@ export const exampleFiles = {
         '',
         '$=    wp wq test.1 test.2 mp $.',
     ].join('\n'),
+
+    'bad1.mmp': ':',
 };
 
 Object.entries(exampleFiles).forEach(([filename, content]) => {

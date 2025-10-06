@@ -67,6 +67,14 @@ export const createUnifier: CreateUnifier = (mmData: string) => {
             const mmpParser: MmpParser = new MmpParser(mmpParserParams);
             mmpParser.parse();
 
+            if (mmpParser.diagnostics.length) {
+                const errors = mmpParser.diagnostics.map(
+                    (item) =>
+                        `${item.range.start.line}:${item.range.start.character} - Error: ${item.message}`,
+                );
+                throw new Error(errors.join('\n'));
+            }
+
             const mmpUnifier = new MmpUnifier({
                 mmpParser: mmpParser,
                 proofMode: ProofMode.normal,
