@@ -4,7 +4,7 @@
 // e.g. yammau examples/example.mm examples/ununified.mmp
 
 import fsp from 'fs/promises';
-import { createUnifier } from 'yamma-unifier';
+import { createUnifier } from './unifier';
 
 const main = async () => {
     if (process.argv.length < 3) {

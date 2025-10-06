@@ -9,7 +9,5 @@ module.exports = {
         ...tsJestTransformCfg,
     },
     testMatch: ['<rootDir>/src/**/*.test.ts'],
-    transformIgnorePatterns: [
-        '/node_modules/(?!yamma-server)',
-    ],
+    transformIgnorePatterns: ['/node_modules/(?!yamma-server)'],
 };
