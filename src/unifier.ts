@@ -12,28 +12,49 @@ import { IMmpParserParams, MmpParser } from 'yamma-server/src/mmp/MmpParser';
 import { WorkingVars } from 'yamma-server/src/mmp/WorkingVars';
 import { MmpUnifier } from 'yamma-server/src/mmp/MmpUnifier';
 
-export type Unifier = { unify: (mmpData: string) => string };
-export type CreateUnifier = (mmData: string) => Unifier;
+export type UnifierResult = { text: string; mmpUnifier: MmpUnifier };
 
-const variableKindsConfiguration: Map<string, IVariableKindConfiguration> =
-    new Map<string, IVariableKindConfiguration>();
+export type Unifier = {
+    unify: (mmpData: string) => UnifierResult;
+    mmParser: MmParser;
+};
 
-variableKindsConfiguration.set('wff', {
-    workingVarPrefix: 'W',
-    lspSemantictokenType: 'variable',
-});
+export type VariableKindConfig = {
+    kind: string;
+    workingVarPrefix: string;
+    lspSemantictokenType: 'variable' | 'string' | 'keyword';
+};
 
-variableKindsConfiguration.set('setvar', {
-    workingVarPrefix: 'S',
-    lspSemantictokenType: 'string',
-});
+export type UnifierConfig = Omit<
+    IExtensionSettings,
+    'variableKindsConfiguration'
+> & { variableKindsConfig: VariableKindConfig[] };
 
-variableKindsConfiguration.set('class', {
-    workingVarPrefix: 'C',
-    lspSemantictokenType: 'keyword',
-});
+export type CreateUnifier = (
+    mmData: string,
+    config?: Partial<UnifierConfig>,
+) => Unifier;
 
-export const lastFetchedSettings: IExtensionSettings = {
+const mapConfig = (config: UnifierConfig): GlobalState => {
+    const variableKindsConfiguration: Map<string, IVariableKindConfiguration> =
+        new Map<string, IVariableKindConfiguration>(
+            config.variableKindsConfig.map((kindConfig) => [
+                kindConfig.kind,
+                kindConfig,
+            ]),
+        );
+
+    const lastFetchedSettings: IExtensionSettings = {
+        ...config,
+        variableKindsConfiguration: variableKindsConfiguration,
+    };
+
+    const globalState: GlobalState = new GlobalState();
+    globalState.lastFetchedSettings = lastFetchedSettings;
+    return globalState;
+};
+
+const defaultConfig: UnifierConfig = {
     maxNumberOfProblems: 100,
     mmFileFullPath: '',
     disjVarAutomaticGeneration: DisjVarAutomaticGeneration.GenerateNone,
@@ -41,24 +62,43 @@ export const lastFetchedSettings: IExtensionSettings = {
     labelsOrderInCompressedProof:
         LabelsOrderInCompressedProof.mostReferencedFirstAndNiceFormatting,
     diagnosticMessageForSyntaxError: DiagnosticMessageForSyntaxError.short,
-    variableKindsConfiguration: variableKindsConfiguration,
+    variableKindsConfig: [
+        {
+            kind: 'wff',
+            workingVarPrefix: 'W',
+            lspSemantictokenType: 'variable',
+        },
+        {
+            kind: 'setvar',
+            workingVarPrefix: 'S',
+            lspSemantictokenType: 'string',
+        },
+        {
+            kind: 'class',
+            workingVarPrefix: 'C',
+            lspSemantictokenType: 'keyword',
+        },
+    ],
 };
 
-export const globalState: GlobalState = new GlobalState();
-globalState.lastFetchedSettings = lastFetchedSettings;
+export const createUnifier: CreateUnifier = (
+    mmData: string,
+    config?: Partial<UnifierConfig>,
+): Unifier => {
+    const completeConfig = { ...defaultConfig, ...config };
 
-export const kindToPrefixMap: Map<string, string> = new Map<string, string>();
-kindToPrefixMap.set('wff', 'W');
-kindToPrefixMap.set('class', 'C');
-kindToPrefixMap.set('setvar', 'S');
+    const kindToPrefixMap = new Map<string, string>(
+        completeConfig.variableKindsConfig.map((kind) => {
+            return [kind.kind, kind.workingVarPrefix];
+        }),
+    );
 
-export const createUnifier: CreateUnifier = (mmData: string) => {
-    const mmParser = new MmParser(globalState);
+    const mmParser = new MmParser(mapConfig(completeConfig));
     mmParser.ParseText(mmData);
     mmParser.createParseNodesForAssertionsSync();
 
     return {
-        unify: (mmpData: string) => {
+        unify: (mmpData: string): UnifierResult => {
             const mmpParserParams: IMmpParserParams = {
                 textToParse: mmpData,
                 mmParser,
@@ -66,14 +106,6 @@ export const createUnifier: CreateUnifier = (mmData: string) => {
             };
             const mmpParser: MmpParser = new MmpParser(mmpParserParams);
             mmpParser.parse();
-
-            if (mmpParser.diagnostics.length) {
-                const errors = mmpParser.diagnostics.map(
-                    (item) =>
-                        `${item.range.start.line}:${item.range.start.character} - Error: ${item.message}`,
-                );
-                throw new Error(errors.join('\n'));
-            }
 
             const mmpUnifier = new MmpUnifier({
                 mmpParser: mmpParser,
@@ -85,9 +117,9 @@ export const createUnifier: CreateUnifier = (mmData: string) => {
 
             mmpUnifier.unify();
 
-            const textEdit = mmpUnifier.textEditArray[0];
-
-            return textEdit.newText;
+            return { text: mmpUnifier.textEditArray[0].newText, mmpUnifier };
         },
+
+        mmParser,
     };
 };
