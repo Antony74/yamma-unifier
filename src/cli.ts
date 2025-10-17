@@ -1,0 +1,42 @@
+import fsp from 'fs/promises';
+import { createUnifier } from './unifier';
+
+export const cli = async () => {
+    if (process.argv.length < 3) {
+        console.error('usage: yammau file.mm file.mmp [...moreFiles.mmp]');
+        process.exit(1);
+    }
+
+    const [_program, _script, mmFilename, ...mmpFilenames] = process.argv;
+
+    try {
+        console.log(`reading ${mmFilename}`);
+        const mmData = await fsp.readFile(mmFilename, { encoding: 'utf-8' });
+
+        console.log(`parsing ${mmFilename}`);
+        const unifier = createUnifier(mmData);
+
+        for (const mmpFilename of mmpFilenames) {
+            console.log(`reading ${mmpFilename}`);
+
+            const mmpUnunifiedData = await fsp.readFile(mmpFilename, {
+                encoding: 'utf-8',
+            });
+
+            console.log(`unifying ${mmpFilename}`);
+            const result = unifier.unify(mmpUnunifiedData);
+
+            console.log(`writing ${mmpFilename}`);
+            await fsp.writeFile(mmpFilename, result.text);
+        }
+    } catch (e) {
+        if (e instanceof Error) {
+            console.error(e.message);
+            process.exit(1);
+        } else {
+            throw e;
+        }
+    }
+
+    console.log('done');
+};
