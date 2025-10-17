@@ -5,9 +5,6 @@ describe(`yamma-unifier`, () => {
     it(`can unify`, () => {
         const unifier = createUnifier(exampleFiles['example.mm']);
         const result = unifier.unify(exampleFiles['ununified.mmp']);
-
-        console.log(result.mmpUnifier.mmpParser.diagnostics);
-
         expect(result.text).toEqual(exampleFiles['unified.mmp']);
     });
 

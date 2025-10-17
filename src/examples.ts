@@ -35,7 +35,6 @@ export const exampleFiles = {
     ].join('\n'),
 
     'unified.mmp': [
-        '$theorem ununified',
         '',
         '* MissingComment',
         '',
@@ -44,6 +43,8 @@ export const exampleFiles = {
         'qed:2,1:mp         |- Q',
         '',
         '$=    wp wq test.1 test.2 mp $.',
+        '',
+        ''
     ].join('\n'),
 
     'bad1.mmp': ':',

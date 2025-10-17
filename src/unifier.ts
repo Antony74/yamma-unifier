@@ -110,12 +110,17 @@ export const createUnifier: CreateUnifier = (
             const mmpUnifier = new MmpUnifier({
                 mmpParser: mmpParser,
                 proofMode: ProofMode.normal,
-                maxNumberOfHypothesisDispositionsForStepDerivation: 0,
+                maxNumberOfHypothesisDispositionsForStepDerivation: 100000,
                 renumber: false,
                 removeUnusedStatements: false,
             });
 
+            const log = console.log;
+            console.log = () => {}; // Disable logging
+
             mmpUnifier.unify();
+
+            console.log = log; // Re-enable logging
 
             return { text: mmpUnifier.textEditArray[0].newText, mmpUnifier };
         },
