@@ -7,15 +7,16 @@ import {
     CreateUnifier,
     Unifier,
     UnifierConfig,
+    UnifierConfigComplete,
     UnifierResult,
 } from './unifierDefinitions';
-import { defaultConfig, mapConfig } from './config';
+import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
 
 export const createUnifier: CreateUnifier = (
     mmData: string,
-    config?: Partial<UnifierConfig>,
+    config?: UnifierConfig,
 ): Unifier => {
-    const completeConfig = { ...defaultConfig, ...config };
+    const completeConfig = applyDefaultsToConfig(config);
 
     const kindToPrefixMap = new Map<string, string>(
         completeConfig.variableKindsConfig.map((kind) => {
@@ -23,7 +24,7 @@ export const createUnifier: CreateUnifier = (
         }),
     );
 
-    const mmParser = new MmParser(mapConfig(completeConfig));
+    const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
     mmParser.ParseText(mmData);
     mmParser.createParseNodesForAssertionsSync();
 
@@ -39,10 +40,7 @@ export const createUnifier: CreateUnifier = (
 
             const mmpUnifier = new MmpUnifier({
                 mmpParser: mmpParser,
-                proofMode: ProofMode.normal,
-                maxNumberOfHypothesisDispositionsForStepDerivation: 100000,
-                renumber: false,
-                removeUnusedStatements: false,
+                ...completeConfig.unifier,
             });
 
             const log = console.log;

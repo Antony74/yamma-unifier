@@ -1,8 +1,30 @@
-import { GlobalState } from "yamma-server/src/general/GlobalState";
-import DiagnosticMessageForSyntaxError, { IVariableKindConfiguration, IExtensionSettings, DisjVarAutomaticGeneration, ProofMode, LabelsOrderInCompressedProof } from "yamma-server/src/mm/ConfigurationManager";
-import { UnifierConfig } from "./unifierDefinitions";
+import { GlobalState } from 'yamma-server/src/general/GlobalState';
 
-export const mapConfig = (config: UnifierConfig): GlobalState => {
+import {
+    IVariableKindConfiguration,
+    IExtensionSettings,
+} from 'yamma-server/src/mm/ConfigurationManager';
+
+import { UnifierConfig, UnifierConfigComplete } from './unifierDefinitions';
+import { defaultConfig } from './defaultConfig';
+
+export const applyDefaultsToConfig = (
+    config?: UnifierConfig,
+): UnifierConfigComplete => {
+    return config
+        ? {
+              variableKindsConfig:
+                  config.variableKindsConfig ??
+                  defaultConfig.variableKindsConfig,
+              mm: { ...defaultConfig.mm, ...config.mm },
+              unifier: { ...defaultConfig.unifier, ...config.unifier },
+          }
+        : defaultConfig;
+};
+
+export const mapConfigToGlobalState = (
+    config: UnifierConfigComplete,
+): GlobalState => {
     const variableKindsConfiguration: Map<string, IVariableKindConfiguration> =
         new Map<string, IVariableKindConfiguration>(
             config.variableKindsConfig.map((kindConfig) => [
@@ -12,38 +34,11 @@ export const mapConfig = (config: UnifierConfig): GlobalState => {
         );
 
     const lastFetchedSettings: IExtensionSettings = {
-        ...config,
+        ...config.mm,
         variableKindsConfiguration: variableKindsConfiguration,
     };
 
     const globalState: GlobalState = new GlobalState();
     globalState.lastFetchedSettings = lastFetchedSettings;
     return globalState;
-};
-
-export const defaultConfig: UnifierConfig = {
-    maxNumberOfProblems: 100,
-    mmFileFullPath: '',
-    disjVarAutomaticGeneration: DisjVarAutomaticGeneration.GenerateNone,
-    proofMode: ProofMode.normal,
-    labelsOrderInCompressedProof:
-        LabelsOrderInCompressedProof.mostReferencedFirstAndNiceFormatting,
-    diagnosticMessageForSyntaxError: DiagnosticMessageForSyntaxError.short,
-    variableKindsConfig: [
-        {
-            kind: 'wff',
-            workingVarPrefix: 'W',
-            lspSemantictokenType: 'variable',
-        },
-        {
-            kind: 'setvar',
-            workingVarPrefix: 'S',
-            lspSemantictokenType: 'string',
-        },
-        {
-            kind: 'class',
-            workingVarPrefix: 'C',
-            lspSemantictokenType: 'keyword',
-        },
-    ],
 };
