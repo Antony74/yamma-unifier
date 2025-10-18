@@ -1,5 +1,5 @@
 {
-    "name": "yamma-unifier-cli",
+    "name": "yamma-unifier",
     "version": "1.0.0",
     "main": "dist/index.js",
     "bin": {
@@ -13,16 +13,16 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/Antony74/yamma-unifier-cli.git"
+        "url": "git+https://github.com/Antony74/yamma-unifier.git"
     },
     "keywords": [],
     "author": "Antony74",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/Antony74/yamma-unifier-cli/issues"
+        "url": "https://github.com/Antony74/yamma-unifier/issues"
     },
-    "homepage": "https://github.com/Antony74/yamma-unifier-cli#readme",
-    "description": "",
+    "homepage": "https://github.com/Antony74/yamma-unifier#readme",
+    "description": "API and CLI for Yamma's unifier.  Yamma's a Metamath Assistant",
     "devDependencies": {
         "@babel/preset-typescript": "^7.27.1",
         "@types/jest": "^30.0.0",
