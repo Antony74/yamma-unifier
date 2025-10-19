@@ -11,6 +11,7 @@ import {
     UnifierResult,
 } from './unifierDefinitions';
 import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
+import { getDiagnosticsString } from './diagnosticsString';
 
 export const createUnifier: CreateUnifier = (
     mmData: string,
@@ -47,9 +48,10 @@ export const createUnifier: CreateUnifier = (
             console.log = () => {}; // Disable logging
 
             mmpUnifier.unify();
-
             console.log = log; // Re-enable logging
-
+            
+            console.log(getDiagnosticsString(mmpParser));
+            
             return { text: mmpUnifier.textEditArray[0].newText, mmpUnifier };
         },
 
