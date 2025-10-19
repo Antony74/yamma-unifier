@@ -49,9 +49,7 @@ export const createUnifier: CreateUnifier = (
 
             mmpUnifier.unify();
             console.log = log; // Re-enable logging
-            
-            console.log(getDiagnosticsString(mmpParser));
-            
+                        
             return { text: mmpUnifier.textEditArray[0].newText, mmpUnifier };
         },
 
