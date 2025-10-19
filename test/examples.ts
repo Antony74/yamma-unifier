@@ -29,6 +29,8 @@ export const exampleFiles = {
     'bad1.mm': '$(',
 
     'ununified.mmp': [
+        '* Simple example, just the rule of Modus Ponens being applied',
+        '',
         'h1::test.2       |- ( P -> Q )',
         'h2::test.1       |- P',
         'qed::            |- Q',
@@ -36,7 +38,7 @@ export const exampleFiles = {
 
     'unified.mmp': [
         '',
-        '* MissingComment',
+        '* Simple example, just the rule of Modus Ponens being applied',
         '',
         'h1::test.2          |- ( P -> Q )',
         'h2::test.1          |- P',
