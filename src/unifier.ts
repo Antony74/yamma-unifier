@@ -7,11 +7,9 @@ import {
     CreateUnifier,
     Unifier,
     UnifierConfig,
-    UnifierConfigComplete,
     UnifierResult,
 } from './unifierDefinitions';
 import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
-import { getDiagnosticsString } from './diagnosticsString';
 
 export const createUnifier: CreateUnifier = (
     mmData: string,
@@ -48,9 +46,23 @@ export const createUnifier: CreateUnifier = (
             console.log = () => {}; // Disable logging
 
             mmpUnifier.unify();
+
             console.log = log; // Re-enable logging
-                        
-            return { text: mmpUnifier.textEditArray[0].newText, mmpUnifier };
+
+            const result = {
+                text: mmpUnifier.textEditArray[0].newText,
+                mmpUnifier,
+                reparseForDiagnostics: () => {
+                    const parser: MmpParser = new MmpParser({
+                        ...mmpParserParams,
+                        textToParse: result.text,
+                    });
+                    parser.parse();
+                    return parser;
+                },
+            };
+
+            return result;
         },
 
         mmParser,

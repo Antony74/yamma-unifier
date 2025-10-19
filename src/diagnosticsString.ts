@@ -2,8 +2,8 @@ import * as color from 'picocolors';
 import { MmpParser } from 'yamma-server/src/mmp/MmpParser';
 
 const severityFnArray = [
-    color.red,
-    color.red,
+    color.redBright,
+    color.redBright,
     color.yellowBright,
     color.blue,
     color.gray,

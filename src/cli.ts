@@ -34,7 +34,7 @@ export const cli = async () => {
 
             const diagnosticsString = getDiagnosticsString(
                 mmpFilename,
-                result.mmpUnifier.mmpParser,
+                result.reparseForDiagnostics(),
             );
 
             if (diagnosticsString) {

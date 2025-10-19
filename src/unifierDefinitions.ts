@@ -1,8 +1,13 @@
 import { IExtensionSettings } from 'yamma-server/src/mm/ConfigurationManager';
 import { MmParser } from 'yamma-server/src/mm/MmParser';
+import { MmpParser } from 'yamma-server/src/mmp/MmpParser';
 import { MmpUnifier } from 'yamma-server/src/mmp/MmpUnifier';
 
-export type UnifierResult = { text: string; mmpUnifier: MmpUnifier };
+export type UnifierResult = {
+    text: string;
+    mmpUnifier: MmpUnifier;
+    reparseForDiagnostics: () => MmpParser;
+};
 
 export type Unifier = {
     unify: (mmpData: string) => UnifierResult;
