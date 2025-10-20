@@ -6,11 +6,10 @@ import { MmpUnifier } from 'yamma-server/src/mmp/MmpUnifier';
 export type UnifierResult = {
     text: string;
     mmpUnifier: MmpUnifier;
-    reparseForDiagnostics: () => MmpParser;
 };
 
 export type Unifier = {
-    unify: (mmpData: string) => UnifierResult;
+    unify: (mmpData: string | MmpParser) => UnifierResult;
     mmParser: MmParser;
 };
 
@@ -37,4 +36,15 @@ export type UnifierConfig = {
     unifier?: Partial<MmpUnifierConfig>;
 };
 
-export type CreateUnifier = (mmData: string, config?: UnifierConfig) => Unifier;
+export type CreateUnifier = (
+    mmData: string | MmParser,
+    config?: UnifierConfig,
+) => Unifier;
+
+export type ParseMm = (mmData: string, config?: UnifierConfig) => MmParser;
+
+export type ParseMmp = (
+    mmpData: string,
+    mmParser: MmParser,
+    config?: UnifierConfig,
+) => MmpParser;

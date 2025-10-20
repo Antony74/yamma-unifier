@@ -1,6 +1,6 @@
 import fsp from 'fs/promises';
 import * as color from 'picocolors';
-import { createUnifier } from './unifier';
+import { createUnifier, parseMmp } from './unifier';
 import { getDiagnosticsString } from './diagnosticsString';
 
 const info = (s: string) => {
@@ -34,7 +34,7 @@ export const cli = async () => {
 
             const diagnosticsString = getDiagnosticsString(
                 mmpFilename,
-                result.reparseForDiagnostics(),
+                parseMmp(result.text, unifier.mmParser),
             );
 
             if (diagnosticsString) {
