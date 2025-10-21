@@ -6,10 +6,11 @@
         "yammau": "dist/index.js"
     },
     "scripts": {
-        "build": "rimraf dist && tsc",
+        "build": "rimraf dist && vite build",
         "prettier": "prettier --write .",
         "start": "tsx src/index.ts",
-        "test": "jest"
+        "test": "jest",
+        "tsc": "rimraf dist && tsc"
     },
     "repository": {
         "type": "git",
@@ -23,18 +24,21 @@
     },
     "homepage": "https://github.com/Antony74/yamma-unifier#readme",
     "description": "API and CLI for Yamma's unifier.  Yamma's a Metamath Assistant",
+    "dependencies": {
+        "picocolors": "^1.1.1"
+    },
     "devDependencies": {
         "@babel/preset-typescript": "^7.27.1",
         "@types/jest": "^30.0.0",
         "@types/nearley": "^2.11.5",
         "@types/node": "^24.5.2",
         "jest": "^30.2.0",
-        "picocolors": "^1.1.1",
         "prettier": "^3.6.2",
         "rimraf": "^6.0.1",
         "ts-jest": "^29.4.4",
         "tsx": "^4.20.6",
         "typescript": "^5.9.2",
+        "vite": "^7.1.11",
         "yamma-server": "https://gitpkg.vercel.app/glacode/yamma/server?master"
     },
     "prettier": {
