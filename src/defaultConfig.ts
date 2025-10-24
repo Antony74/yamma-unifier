@@ -36,7 +36,7 @@ export const defaultConfig: UnifierConfigComplete = {
     unifier: {
         proofMode: ProofMode.normal,
         maxNumberOfHypothesisDispositionsForStepDerivation: 100000,
-        renumber: false,
-        removeUnusedStatements: false,
+        renumber: true,
+        removeUnusedStatements: true,
     },
 };
