@@ -1,7 +1,7 @@
 import { IExtensionSettings } from 'yamma-server/src/mm/ConfigurationManager';
 import { MmParser } from 'yamma-server/src/mm/MmParser';
 import { MmpParser } from 'yamma-server/src/mmp/MmpParser';
-import { MmpUnifier } from 'yamma-server/src/mmp/MmpUnifier';
+import { MmpUnifier, MmpUnifierArgs } from 'yamma-server/src/mmp/MmpUnifier';
 
 export type UnifierResult = {
     text: string;
@@ -19,10 +19,8 @@ export type VariableKindConfig = {
     lspSemantictokenType: 'variable' | 'string' | 'keyword';
 };
 
-type MmpUnifierArg = ConstructorParameters<typeof MmpUnifier>[0];
-
 export type MmConfig = Omit<IExtensionSettings, 'variableKindsConfiguration'>;
-export type MmpUnifierConfig = Omit<MmpUnifierArg, 'mmpParser'>;
+export type MmpUnifierConfig = Omit<MmpUnifierArgs, 'mmpParser'>;
 
 export type UnifierConfigComplete = {
     variableKindsConfig: VariableKindConfig[];

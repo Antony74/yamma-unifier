@@ -35,12 +35,7 @@ export const createUnifier: CreateUnifier = (
                 ...completeConfig.unifier,
             });
 
-            const log = console.log;
-            console.log = () => {}; // Disable logging
-
             mmpUnifier.unify();
-
-            console.log = log; // Re-enable logging
 
             const result = {
                 text: mmpUnifier.textEditArray[0].newText,
