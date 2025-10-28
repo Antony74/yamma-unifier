@@ -13,9 +13,7 @@ export const applyDefaultsToConfig = (
 ): UnifierConfigComplete => {
     return config
         ? {
-              variableKindsConfig:
-                  config.variableKindsConfig ??
-                  defaultConfig.variableKindsConfig,
+              common: { ...defaultConfig.common, ...config.common },
               mm: { ...defaultConfig.mm, ...config.mm },
               unifier: { ...defaultConfig.unifier, ...config.unifier },
           }
@@ -27,7 +25,7 @@ export const mapConfigToGlobalState = (
 ): GlobalState => {
     const variableKindsConfiguration: Map<string, IVariableKindConfiguration> =
         new Map<string, IVariableKindConfiguration>(
-            config.variableKindsConfig.map((kindConfig) => [
+            config.common.variableKindsConfig.map((kindConfig) => [
                 kindConfig.kind,
                 kindConfig,
             ]),
@@ -35,6 +33,7 @@ export const mapConfigToGlobalState = (
 
     const lastFetchedSettings: IExtensionSettings = {
         ...config.mm,
+        proofMode: config.common.proofMode,
         variableKindsConfiguration: variableKindsConfiguration,
     };
 

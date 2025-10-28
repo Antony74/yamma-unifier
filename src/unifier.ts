@@ -32,6 +32,7 @@ export const createUnifier: CreateUnifier = (
 
             const mmpUnifier = new MmpUnifier({
                 mmpParser,
+                proofMode: completeConfig.common.proofMode,
                 ...completeConfig.unifier,
             });
 
@@ -70,7 +71,7 @@ export const parseMmp: ParseMmp = (
     const completeConfig = applyDefaultsToConfig(config);
 
     const kindToPrefixMap = new Map<string, string>(
-        completeConfig.variableKindsConfig.map((kind) => {
+        completeConfig.common.variableKindsConfig.map((kind) => {
             return [kind.kind, kind.workingVarPrefix];
         }),
     );
@@ -84,4 +85,3 @@ export const parseMmp: ParseMmp = (
     mmpParser.parse();
     return mmpParser;
 };
-
