@@ -2,18 +2,20 @@
     "name": "get-yamma",
     "version": "1.0.0",
     "scripts": {
-        "start": "tsx install.ts"
+        "postinstall": "node install.ts",
+        "tsc": "rimraf dist && tsc"
     },
     "author": "Antony74",
     "license": "MIT",
     "dependencies": {
-        "@types/node": "^24.9.2",
         "tar-stream": "^3.1.7",
-        "tsx": "^4.20.6",
-        "typescript": "^5.9.3",
         "yamma-unifier": "file:.."
     },
     "devDependencies": {
         "@types/tar-stream": "^3.1.4"
+    },
+    "type": "module",
+    "engines": {
+        "node": ">=22.18.0"
     }
 }

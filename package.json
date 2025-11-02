@@ -7,6 +7,7 @@
     },
     "scripts": {
         "build": "rimraf dist && vite build",
+        "preinstall": "npm install --prefix=get-yamma",
         "prettier": "prettier --write .",
         "start": "tsx src/index.ts",
         "test": "jest",
@@ -45,5 +46,8 @@
         "tabWidth": 4,
         "singleQuote": true
     },
-    "type": "commonjs"
+    "type": "commonjs",
+    "engines": {
+        "node": ">=22.18.0"
+    }
 }
