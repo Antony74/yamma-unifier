@@ -1,4 +1,5 @@
-import fs from 'fs';
+import { createReadStream, createWriteStream } from 'fs';
+import { stat } from 'fs/promises';
 import zlib from 'zlib';
 import { exec } from 'child_process';
 
@@ -27,8 +28,8 @@ const extractYammaServer = async (inFilename: string, outFilename: string) => {
         const extract = tar.extract();
         const pack = tar.pack();
 
-        fs.createReadStream(inFilename).pipe(zlib.createGunzip()).pipe(extract);
-        pack.pipe(zlib.createGzip()).pipe(fs.createWriteStream(outFilename));
+        createReadStream(inFilename).pipe(zlib.createGunzip()).pipe(extract);
+        pack.pipe(zlib.createGzip()).pipe(createWriteStream(outFilename));
 
         extract.on('entry', function (header, stream, next) {
             console.log(header.name);
@@ -50,11 +51,23 @@ const extractYammaServer = async (inFilename: string, outFilename: string) => {
     });
 };
 
+const fileExists = async (filename: string): Promise<boolean> => {
+    try {
+        await stat(filename);
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
 const main = async () => {
-    const rawFilename = await execCmd(`npm pack github:glacode/yamma`);
-    const inFilename = rawFilename.trim();
     const outFilename = 'yamma-server.tgz';
-    await extractYammaServer(inFilename, outFilename);
+    const outFileExists = await fileExists(outFilename);
+    if (!outFileExists) {
+        const rawFilename = await execCmd(`npm pack github:glacode/yamma`);
+        const inFilename = rawFilename.trim();
+        await extractYammaServer(inFilename, outFilename);
+    }
 };
 
 main();

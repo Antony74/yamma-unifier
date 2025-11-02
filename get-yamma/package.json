@@ -2,14 +2,12 @@
     "name": "get-yamma",
     "version": "1.0.0",
     "scripts": {
-        "postinstall": "node install.ts",
         "tsc": "rimraf dist && tsc"
     },
     "author": "Antony74",
     "license": "MIT",
     "dependencies": {
-        "tar-stream": "^3.1.7",
-        "yamma-unifier": "file:.."
+        "tar-stream": "^3.1.7"
     },
     "devDependencies": {
         "@types/tar-stream": "^3.1.4"

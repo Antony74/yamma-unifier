@@ -7,7 +7,7 @@
     },
     "scripts": {
         "build": "rimraf dist && vite build",
-        "preinstall": "npm install --prefix=get-yamma",
+        "preinstall": "cd get-yamma && npm install",
         "prettier": "prettier --write .",
         "start": "tsx src/index.ts",
         "test": "jest",
