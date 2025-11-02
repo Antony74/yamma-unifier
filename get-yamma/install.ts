@@ -1,9 +1,10 @@
 import { createReadStream, createWriteStream } from 'fs';
-import { stat } from 'fs/promises';
+import fsp from 'fs/promises';
 import zlib from 'zlib';
 import { exec } from 'child_process';
 
 import tar from 'tar-stream';
+import path from 'path';
 
 const execCmd = async (cmd: string) => {
     console.log(cmd);
@@ -51,19 +52,15 @@ const extractYammaServer = async (inFilename: string, outFilename: string) => {
     });
 };
 
-const fileExists = async (filename: string): Promise<boolean> => {
-    try {
-        await stat(filename);
-        return true;
-    } catch (e) {
-        return false;
-    }
-};
-
 const main = async () => {
     const outFilename = 'yamma-server.tgz';
-    const outFileExists = await fileExists(outFilename);
-    if (!outFileExists) {
+    const dirlist = await fsp.readdir('.');
+    const filteredDirlists = dirlist.filter((filename) => {
+        const parsedPath = path.parse(filename);
+        return parsedPath.ext === '.tgz' && parsedPath.base !== outFilename;
+    });
+
+    if (!filteredDirlists.length) {
         const rawFilename = await execCmd(`npm pack github:glacode/yamma`);
         const inFilename = rawFilename.trim();
         await extractYammaServer(inFilename, outFilename);
