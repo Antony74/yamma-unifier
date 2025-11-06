@@ -7,7 +7,6 @@
     },
     "scripts": {
         "build": "rimraf dist && vite build",
-        "preinstall": "cd get-yamma && npm install",
         "prettier": "prettier --write .",
         "start": "tsx src/index.ts",
         "test": "jest",
@@ -40,7 +39,7 @@
         "tsx": "^4.20.6",
         "typescript": "^5.9.2",
         "vite": "^7.1.11",
-        "yamma-server": "file:./get-yamma/yamma-server.tgz"
+        "yamma-server": "file:./yamma/server"
     },
     "prettier": {
         "tabWidth": 4,

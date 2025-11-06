@@ -1,0 +1,3 @@
+[submodule "yamma"]
+	path = yamma
+	url = git@github.com:glacode/yamma.git
