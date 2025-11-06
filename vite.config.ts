@@ -13,6 +13,7 @@ const config: UserConfig = {
                 'events',
                 'fs',
                 'fs/promises',
+                'path',
                 'picocolors',
                 'readline',
                 'stream',
