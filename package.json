@@ -28,6 +28,7 @@
         "picocolors": "^1.1.1"
     },
     "devDependencies": {
+        "@babel/preset-env": "^7.28.5",
         "@babel/preset-typescript": "^7.28.5",
         "@types/jest": "^30.0.0",
         "@types/nearley": "^2.11.5",
@@ -35,7 +36,6 @@
         "jest": "^30.2.0",
         "prettier": "^3.6.2",
         "rimraf": "^6.0.1",
-        "ts-jest": "^29.4.5",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3",
         "vite": "^7.2.1",
