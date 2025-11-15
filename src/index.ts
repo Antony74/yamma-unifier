@@ -5,7 +5,8 @@
 
 import { cli } from './cli';
 export * from './unifier';
+import { isMainThread } from 'worker_threads';
 
-if (require.main === module) {
+if (require.main === module && isMainThread) {
     cli();
 }

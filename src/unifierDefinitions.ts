@@ -49,9 +49,9 @@ export type UnifierConfig = {
 export type CreateUnifier = (
     mmData: string | MmParser,
     config?: UnifierConfig,
-) => Unifier;
+) => Promise<Unifier>;
 
-export type ParseMm = (mmData: string, config?: UnifierConfig) => MmParser;
+export type ParseMm = (mmData: string, config?: UnifierConfig) => Promise<MmParser>;
 
 export type ParseMmp = (
     mmpData: string,

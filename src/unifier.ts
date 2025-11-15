@@ -14,14 +14,16 @@ import {
     UnifierResult,
 } from './unifierDefinitions';
 
-export const createUnifier: CreateUnifier = (
+export const createUnifier: CreateUnifier = async (
     mmData: string | MmParser,
     config?: UnifierConfig,
-): Unifier => {
+): Promise<Unifier> => {
     const completeConfig = applyDefaultsToConfig(config);
 
     const mmParser: MmParser =
-        typeof mmData === 'string' ? parseMm(mmData, completeConfig) : mmData;
+        typeof mmData === 'string'
+            ? await parseMm(mmData, completeConfig)
+            : mmData;
 
     return {
         unify: (mmpData: string | MmpParser): UnifierResult => {
@@ -50,15 +52,19 @@ export const createUnifier: CreateUnifier = (
     };
 };
 
-export const parseMm: ParseMm = (
+export const parseMm: ParseMm = async (
     mmData: string,
     config?: UnifierConfig,
-): MmParser => {
+): Promise<MmParser> => {
     const completeConfig = applyDefaultsToConfig(config);
 
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
     mmParser.ParseText(mmData);
-    mmParser.createParseNodesForAssertionsSync();
+    await mmParser.createParseNodesForAssertionsAsync((message) => {
+        if (message.kind === 'progress') {
+            console.log(message.index / message.count);
+        }
+    });
 
     return mmParser;
 };

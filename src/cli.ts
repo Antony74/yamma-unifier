@@ -20,7 +20,7 @@ export const cli = async () => {
         const mmData = await fsp.readFile(mmFilename, { encoding: 'utf-8' });
 
         info(`parsing ${mmFilename}`);
-        const unifier = createUnifier(mmData);
+        const unifier = await createUnifier(mmData);
 
         for (const mmpFilename of mmpFilenames) {
             info(`reading ${mmpFilename}`);
