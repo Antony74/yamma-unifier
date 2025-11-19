@@ -34,6 +34,7 @@ export const defaultConfig: UnifierConfigComplete = {
         labelsOrderInCompressedProof:
             LabelsOrderInCompressedProof.mostReferencedFirstAndNiceFormatting,
         diagnosticMessageForSyntaxError: DiagnosticMessageForSyntaxError.short,
+        progressCallback: () => {},
     },
     unifier: {
         maxNumberOfHypothesisDispositionsForStepDerivation: 100000,

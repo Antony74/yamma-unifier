@@ -5,6 +5,7 @@ import {
 import { MmParser } from 'yamma-server/src/mm/MmParser';
 import { MmpParser } from 'yamma-server/src/mmp/MmpParser';
 import { MmpUnifier, MmpUnifierArgs } from 'yamma-server/src/mmp/MmpUnifier';
+import { ProgressCallback } from 'yamma-server/src/parseNodesCreatorThread/ParseNodesCreator';
 
 export type UnifierResult = {
     text: string;
@@ -23,7 +24,7 @@ export type VariableKindConfig = {
 };
 
 export type MmConfig = Omit<
-    IExtensionSettings,
+    IExtensionSettings & { progressCallback: ProgressCallback },
     'variableKindsConfiguration' | 'proofMode'
 >;
 
@@ -41,7 +42,7 @@ export type UnifierConfigComplete = {
 };
 
 export type UnifierConfig = {
-    common: Partial<UnifierConfigCommon>;
+    common?: Partial<UnifierConfigCommon>;
     mm?: Partial<MmConfig>;
     unifier?: Partial<MmpUnifierConfig>;
 };
@@ -51,7 +52,10 @@ export type CreateUnifier = (
     config?: UnifierConfig,
 ) => Promise<Unifier>;
 
-export type ParseMm = (mmData: string, config?: UnifierConfig) => Promise<MmParser>;
+export type ParseMm = (
+    mmData: string,
+    config?: UnifierConfig,
+) => Promise<MmParser>;
 
 export type ParseMmp = (
     mmpData: string,

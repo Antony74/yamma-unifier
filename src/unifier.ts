@@ -60,11 +60,7 @@ export const parseMm: ParseMm = async (
 
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
     mmParser.ParseText(mmData);
-    await mmParser.createParseNodesForAssertionsAsync((message) => {
-        if (message.kind === 'progress') {
-            console.log(message.index / message.count);
-        }
-    });
+    await mmParser.createParseNodesForAssertionsAsync(completeConfig.mm.progressCallback);
 
     return mmParser;
 };
