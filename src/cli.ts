@@ -1,5 +1,6 @@
 import fsp from 'fs/promises';
 import * as color from 'picocolors';
+import { createPrompt } from '@inquirer/core';
 import { createUnifier, parseMmp } from './unifier';
 import { getDiagnosticsString } from './diagnosticsString';
 import { ProgressCallback } from 'yamma-server/src/parseNodesCreatorThread/ParseNodesCreator';
