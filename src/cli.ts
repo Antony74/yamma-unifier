@@ -1,9 +1,10 @@
 import fsp from 'fs/promises';
 import * as color from 'picocolors';
-import { createPrompt } from '@inquirer/core';
+import { createPrompt, useEffect, useState } from '@inquirer/core';
 import { createUnifier, parseMmp } from './unifier';
 import { getDiagnosticsString } from './diagnosticsString';
 import { ProgressCallback } from 'yamma-server/src/parseNodesCreatorThread/ParseNodesCreator';
+import { Unifier } from './unifierDefinitions';
 
 const info = (s: string) => {
     console.log(color.gray(s));
@@ -21,17 +22,30 @@ export const cli = async () => {
         info(`reading ${mmFilename}`);
         const mmData = await fsp.readFile(mmFilename, { encoding: 'utf-8' });
 
-        info(`parsing ${mmFilename}`);
+        const prompt = createPrompt<Unifier, {}>((_config, done): string => {
+            const [progress, setProgress] = useState(0);
 
-        const progressCallback: ProgressCallback = (message) => {
-            if (message.kind === 'progress') {
-                console.log(message.index / message.count);
-            }
-        };
+            useEffect(() => {
+                const progressCallback: ProgressCallback = (message) => {
+                    if (message.kind === 'progress') {
+                        setProgress(message.index / message.count);
+                    }
+                };
 
-        const unifier = await createUnifier(mmData, {
-            mm: { progressCallback },
+                createUnifier(mmData, {
+                    mm: { progressCallback },
+                }).then((unifier) => {
+                    setProgress(1);
+                    done(unifier);
+                });
+            }, []);
+
+            return color.gray(
+                `parsing ${mmFilename}... ${Math.round(progress * 100)}%`,
+            );
         });
+
+        const unifier = await prompt({});
 
         for (const mmpFilename of mmpFilenames) {
             info(`reading ${mmpFilename}`);
