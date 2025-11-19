@@ -25,6 +25,7 @@
     "homepage": "https://github.com/Antony74/yamma-unifier#readme",
     "description": "API and CLI for Yamma's unifier.  Yamma's a Metamath Assistant",
     "dependencies": {
+        "@inquirer/core": "^11.0.1",
         "picocolors": "^1.1.1"
     },
     "devDependencies": {
