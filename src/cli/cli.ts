@@ -1,10 +1,10 @@
 import fsp from 'fs/promises';
 import * as color from 'picocolors';
 import { createPrompt, useEffect, useState } from '@inquirer/core';
-import { createUnifier, parseMmp } from './unifier';
+import { createUnifier, parseMmp } from '../api/unifier';
 import { getDiagnosticsString } from './diagnosticsString';
 import { ProgressCallback } from 'yamma-server/src/parseNodesCreatorThread/ParseNodesCreator';
-import { Unifier } from './unifierDefinitions';
+import { Unifier } from '../api/unifierDefinitions';
 
 const info = (s: string) => {
     console.log(color.gray(s));
