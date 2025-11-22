@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "main": "dist/index.js",
     "bin": {
-        "yammau": "dist/index.js"
+        "yamma": "dist/index.js"
     },
     "scripts": {
         "build": "rimraf dist && node build.js",
