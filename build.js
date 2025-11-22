@@ -3,5 +3,5 @@ require('esbuild').build({
     bundle: true,
     outdir: 'dist',
     platform: 'node',
-    external: [],
+    external: ['yargs'],
 });
