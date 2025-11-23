@@ -9,26 +9,172 @@ const commands = [
     'truncate',
 ] as const;
 
-type Command = (typeof commands)[number];
+const truncateSubCommands = ['before', 'after', 'count'] as const;
 
-export type Args = { command: Command, mmFilename: string, mmpFilenames: string[] };
+export type Command = (typeof commands)[number];
+export type TruncateSubCommand = (typeof truncateSubCommands)[number];
+
+export type UnifyArgs = {
+    command: 'unify';
+    mmFile: string;
+    mmpFilenames: string[];
+};
+
+export type GetArgs = {
+    command: 'get';
+    mmFile: string;
+    proofIds: string[];
+};
+
+export type CompressArgs = {
+    command: 'compress';
+    mmFile: string;
+    proofIds: string[];
+};
+
+export type DecompressArgs = {
+    command: 'decompress';
+    mmFile: string;
+    proofIds: string[];
+};
+
+export type TruncateBeforeArgs = {
+    command: 'truncate';
+    subCommand: 'before';
+    proofIds: string;
+};
+
+export type TruncateAfterArgs = {
+    command: 'truncate';
+    subCommand: 'after';
+    proofIds: string;
+};
+
+export type TruncateCountArgs = {
+    command: 'truncate';
+    subCommand: 'count';
+    count: number;
+};
+
+export type Args =
+    | UnifyArgs
+    | GetArgs
+    | CompressArgs
+    | DecompressArgs
+    | TruncateBeforeArgs
+    | TruncateAfterArgs
+    | TruncateCountArgs;
 
 export const parseArgs = (): Args => {
     const parsed = yargs(hideBin(process.argv))
         .scriptName('yamma')
         .command(
-            ['unify <mmFilename> [mmpFiles...]', 'u'],
+            ['unify <mmFile> [mmpFiles...]', 'u'],
             'Unify any given .mmp filenames',
             (yargs) => {
                 return yargs
-                    .positional('mmFilename', {
-                        describe: 'A .mm file',
+                    .positional('mmFile', {
+                        description: 'A .mm file',
                         type: 'string',
                     })
                     .positional('mmpFilenames', {
-                        describe: 'Zero or more .mmp files',
+                        description: 'Zero or more .mmp files',
                         type: 'string',
-                        array: true,
+                    });
+            },
+        )
+        .command(
+            ['get <mmFile> [proofIds...]', 'g'],
+            'Get proofs and create .mmp files',
+            (yargs) => {
+                return yargs
+                    .positional('mmFile', {
+                        description: 'A .mm file',
+                        type: 'string',
+                    })
+                    .positional('proofIds', {
+                        description:
+                            'Zero or more proof identifiers from the .mm file',
+                        type: 'string',
+                    })
+                    .option('all', {
+                        description: 'Create .mmp files for all(!) proofs',
+                    });
+            },
+        )
+        .command(
+            ['compress <mmFile> [proofIds...]', 'c'],
+            'Compress proofs in .mm',
+            (yargs) => {
+                return yargs
+                    .positional('mmFile', {
+                        description: 'A .mm file',
+                        type: 'string',
+                    })
+                    .positional('proofIds', {
+                        describe:
+                            'Zero or more proof identifiers from the .mm file',
+                        type: 'string',
+                    })
+                    .option('all', {
+                        description: 'Compress all(!) proofs',
+                    });
+            },
+        )
+        .command(
+            ['decompress <mmFile> [proofIds...]', 'd'],
+            'Decompress proofs in .mm',
+            (yargs) => {
+                return yargs
+                    .positional('mmFile', {
+                        description: 'A .mm file',
+                        type: 'string',
+                    })
+                    .positional('proofIds', {
+                        description:
+                            'Zero or more proof identifiers from the .mm file',
+                        type: 'string',
+                    })
+                    .option('all', {
+                        description: 'Decompress all(!) proofs',
+                    });
+            },
+        )
+        .command(
+            ['truncate <proofIdOrNumber>', 't'],
+            'Truncate .mm file',
+            (yargs) => {
+                return yargs
+                    .positional('mmFile', {
+                        description: 'A .mm filename',
+                        type: 'string',
+                    })
+                    .option('before', {
+                        alias: 'b',
+                        type: 'boolean',
+                        description:
+                            'File should be truncated before the given proof',
+                    })
+                    .option('after', {
+                        alias: 'a',
+                        type: 'boolean',
+                        description:
+                            'File should be truncated after the given proof',
+                    })
+                    .option('count', {
+                        alias: 'c',
+                        type: 'boolean',
+                        description:
+                            'File should be truncated at the given count of proofs',
+                    })
+                    .check(
+                        (_argv, options) =>
+                            options.before || options.after || options.count,
+                    )
+                    .positional('proofIdOrNumber', {
+                        description:
+                            'Proof to truncate .mm before or after, or total count of proofs desired after truncation',
+                        type: 'string',
                     });
             },
         )
@@ -44,8 +190,6 @@ export const parseArgs = (): Args => {
         .parseSync();
 
     return {
-        command: parsed.command as Command,
-        mmFilename: parsed.mmFilename as string,
-        mmpFilenames: parsed.mmpFilenames as string[],
-    };
+        ...parsed,
+    } as unknown as Args;
 };
