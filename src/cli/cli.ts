@@ -3,12 +3,15 @@ import * as color from 'picocolors';
 import { parseMmp } from '../api/unifier';
 import { getDiagnosticsString } from './diagnosticsString';
 import { createUnifierWithProgress } from './createUnifierWithProgress';
+import { parseArgs } from './parseArgs';
 
 const info = (s: string) => {
     console.log(color.gray(s));
 };
 
 export const cli = async () => {
+    console.log(JSON.stringify(parseArgs(process.argv), null, 4));
+
     if (process.argv.length < 3) {
         console.error('usage: yammau file.mm file.mmp [...moreFiles.mmp]');
         process.exit(1);

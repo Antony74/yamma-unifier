@@ -65,8 +65,8 @@ export type Args =
     | TruncateAfterArgs
     | TruncateCountArgs;
 
-export const parseArgs = (): Args => {
-    const parsed = yargs(hideBin(process.argv))
+export const parseArgs = (argv: string[]): Args => {
+    const parsed = yargs(hideBin(argv))
         .scriptName('yamma')
         .command(
             ['unify <mmFile> [mmpFiles...]', 'u'],
