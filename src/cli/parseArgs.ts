@@ -201,9 +201,21 @@ export const parseArgs = (argv: string[]): Args => {
                 all: parsed.all,
             } as GetArgs;
         case 'compress':
+            return {
+                command: 'compress',
+                mmFile: parsed.mmFile,
+                proofIds: parsed.proofIds,
+                all: parsed.all,
+            } as CompressArgs;
         case 'decompress':
+            return {
+                command: 'decompress',
+                mmFile: parsed.mmFile,
+                proofIds: parsed.proofIds,
+                all: parsed.all,
+            } as DecompressArgs;
         case 'truncate':
-
+            return {} as TruncateAfterArgs;
         case 'unify':
         default:
             return {

@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import { Args, GetArgs, parseArgs, UnifyArgs } from '../../src/cli/parseArgs';
+import {
+    Args,
+    CompressArgs,
+    DecompressArgs,
+    GetArgs,
+    parseArgs,
+    UnifyArgs,
+} from '../../src/cli/parseArgs';
 
 type TestItem = { name: string; cmd: string; expected: Args };
 
@@ -23,8 +30,8 @@ const testConfig: TestItem[] = [
         } satisfies UnifyArgs,
     },
     {
-        name: 'u two .mmp files',
-        cmd: 'npm start unify examples/example.mm examples/ununified.mmp examples/unified.mmp',
+        name: 'unify two .mmp files',
+        cmd: 'npm start u examples/example.mm examples/ununified.mmp examples/unified.mmp',
         expected: {
             command: 'unify',
             mmFile: 'examples/example.mm',
@@ -38,7 +45,7 @@ const testConfig: TestItem[] = [
             command: 'get',
             mmFile: 'examples/example.mm',
             proofIds: ['th1'],
-            all: undefined
+            all: undefined,
         } satisfies GetArgs,
     },
     {
@@ -48,8 +55,48 @@ const testConfig: TestItem[] = [
             command: 'get',
             mmFile: 'examples/example.mm',
             proofIds: [],
-            all: true
+            all: true,
         } satisfies GetArgs,
+    },
+    {
+        name: 'compress a proof',
+        cmd: 'npm start compress examples/example.mm th1',
+        expected: {
+            command: 'compress',
+            mmFile: 'examples/example.mm',
+            proofIds: ['th1'],
+            all: undefined,
+        } satisfies CompressArgs,
+    },
+    {
+        name: 'compress all proofs',
+        cmd: 'npm start compress examples/example.mm --all',
+        expected: {
+            command: 'compress',
+            mmFile: 'examples/example.mm',
+            proofIds: [],
+            all: true,
+        } satisfies CompressArgs,
+    },
+    {
+        name: 'decompress a proof',
+        cmd: 'npm start decompress examples/example.mm th1',
+        expected: {
+            command: 'decompress',
+            mmFile: 'examples/example.mm',
+            proofIds: ['th1'],
+            all: undefined,
+        } satisfies DecompressArgs,
+    },
+    {
+        name: 'decompress all proofs',
+        cmd: 'npm start decompress examples/example.mm --all',
+        expected: {
+            command: 'decompress',
+            mmFile: 'examples/example.mm',
+            proofIds: [],
+            all: true,
+        } satisfies DecompressArgs,
     },
 ];
 
