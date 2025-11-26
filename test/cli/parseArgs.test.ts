@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { Args, parseArgs, UnifyArgs } from '../../src/cli/parseArgs';
 
-type TestItem = { cmd: string; expected: Args };
+type TestItem = { name: string; cmd: string; expected: Args };
 
 const testConfig: TestItem[] = [
     {
+        name: 'unify one .mmp file',
         cmd: 'npm start unify examples/example.mm examples/ununified.mmp',
         expected: {
             command: 'unify',
@@ -15,8 +16,8 @@ const testConfig: TestItem[] = [
 ];
 
 describe('parseArgs', () => {
-    testConfig.map(({ cmd, expected }) => {
-        test(cmd, () => {
+    testConfig.map(({ name, cmd, expected }) => {
+        test(name, () => {
             const result = parseArgs(cmd.split(' '));
             expect(result).toEqual(expected);
         });

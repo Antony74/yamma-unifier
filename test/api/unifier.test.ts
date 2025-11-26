@@ -10,7 +10,7 @@ describe(`yamma-unifier`, () => {
     });
 
     it(`throws an error given bad mmData`, async () => {
-        expect(
+        await expect(
             async () => await createUnifier(exampleFiles['bad1.mm']),
         ).rejects.toEqual(new Error('A comment was never closed'));
     });
