@@ -79,6 +79,7 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm file',
                         type: 'string',
+                        demandOption: true,
                     })
                     .positional('mmpFilenames', {
                         description: 'Zero or more .mmp files',
@@ -94,6 +95,7 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm file',
                         type: 'string',
+                        demandOption: true,
                     })
                     .positional('proofIds', {
                         description:
@@ -113,6 +115,7 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm file',
                         type: 'string',
+                        demandOption: true,
                     })
                     .positional('proofIds', {
                         describe:
@@ -132,6 +135,7 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm file',
                         type: 'string',
+                        demandOption: true,
                     })
                     .positional('proofIds', {
                         description:
@@ -151,6 +155,7 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm filename',
                         type: 'string',
+                        demandOption: true,
                     })
                     .option('before', {
                         alias: 'b',
@@ -170,14 +175,11 @@ export const parseArgs = (argv: string[]): Args => {
                         description:
                             'File should be truncated at the given count of proofs',
                     })
-                    .check(
-                        (_argv, options) =>
-                            options.before || options.after || options.count,
-                    )
                     .positional('proofIdOrNumber', {
                         description:
                             'Proof to truncate .mm before or after, or total count of proofs desired after truncation',
                         type: 'string',
+                        demandOption: true,
                     });
             },
         )
@@ -215,7 +217,26 @@ export const parseArgs = (argv: string[]): Args => {
                 all: parsed.all,
             } as DecompressArgs;
         case 'truncate':
-            return {} as TruncateAfterArgs;
+            const optionCount = [
+                parsed.before,
+                parsed.after,
+                parsed.count,
+            ].filter((flag) => flag === true).length;
+
+            if (optionCount !== 1) {
+                console.error(
+                    `truncate command expected exactly one --before, --after, --count option.  Found ${optionCount}`,
+                );
+                process.exit(1);
+            }
+
+            if (parsed.before) {
+                return {} as TruncateBeforeArgs;
+            } else if (parsed.after) {
+                return {} as TruncateAfterArgs;
+            } else {
+                return {} as TruncateCountArgs;
+            }
         case 'unify':
         default:
             return {

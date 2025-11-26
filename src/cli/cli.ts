@@ -10,7 +10,7 @@ const info = (s: string) => {
 };
 
 export const cli = async () => {
-    console.log(JSON.stringify(parseArgs(process.argv), null, 4));
+    const _args = parseArgs(process.argv);
 
     if (process.argv.length < 3) {
         console.error('usage: yammau file.mm file.mmp [...moreFiles.mmp]');
