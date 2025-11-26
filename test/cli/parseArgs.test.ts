@@ -5,11 +5,11 @@ type TestItem = { cmd: string; expected: Args };
 
 const testConfig: TestItem[] = [
     {
-        cmd: 'yamma unify examples/example.mm examples/ununified.mmp',
+        cmd: 'npm start unify examples/example.mm examples/ununified.mmp',
         expected: {
             command: 'unify',
             mmFile: 'examples/example.mm',
-            mmpFilenames: ['examples/ununified.mmp'],
+            mmpFiles: ['examples/ununified.mmp'],
         } satisfies UnifyArgs,
     },
 ];

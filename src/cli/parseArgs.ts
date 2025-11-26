@@ -17,7 +17,7 @@ export type TruncateSubCommand = (typeof truncateSubCommands)[number];
 export type UnifyArgs = {
     command: 'unify';
     mmFile: string;
-    mmpFilenames: string[];
+    mmpFiles: string[];
 };
 
 export type GetArgs = {
@@ -190,6 +190,8 @@ export const parseArgs = (argv: string[]): Args => {
         .parseSync();
 
     return {
-        ...parsed,
-    } as unknown as Args;
+        command: parsed.command,
+        mmFile: parsed.mmFile,
+        mmpFiles: parsed.mmpFiles,
+    } as Args;
 };
