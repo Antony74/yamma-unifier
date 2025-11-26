@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'vitest';
 import { Args, parseArgs, UnifyArgs } from '../../src/cli/parseArgs';
 
 type TestItem = { cmd: string; expected: Args };
