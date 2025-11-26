@@ -3,7 +3,7 @@ import { hideBin } from 'yargs/helpers';
 
 const commands = [
     'unify',
-    'add',
+    'get',
     'compress',
     'decompress',
     'truncate',
@@ -24,18 +24,21 @@ export type GetArgs = {
     command: 'get';
     mmFile: string;
     proofIds: string[];
+    all: boolean | undefined;
 };
 
 export type CompressArgs = {
     command: 'compress';
     mmFile: string;
     proofIds: string[];
+    all: boolean | undefined;
 };
 
 export type DecompressArgs = {
     command: 'decompress';
     mmFile: string;
     proofIds: string[];
+    all: boolean | undefined;
 };
 
 export type TruncateBeforeArgs = {
@@ -189,9 +192,24 @@ export const parseArgs = (argv: string[]): Args => {
         .demandCommand(1)
         .parseSync();
 
-    return {
-        command: parsed.command,
-        mmFile: parsed.mmFile,
-        mmpFiles: parsed.mmpFiles,
-    } as Args;
+    switch (parsed.command) {
+        case 'get':
+            return {
+                command: 'get',
+                mmFile: parsed.mmFile,
+                proofIds: parsed.proofIds,
+                all: parsed.all,
+            } as GetArgs;
+        case 'compress':
+        case 'decompress':
+        case 'truncate':
+
+        case 'unify':
+        default:
+            return {
+                command: parsed.command,
+                mmFile: parsed.mmFile,
+                mmpFiles: parsed.mmpFiles,
+            } as UnifyArgs;
+    }
 };
