@@ -12,7 +12,12 @@ import { afterEach } from 'node:test';
 
 type TestItem =
     | { name: string; cmd: string; outcome: 'return'; expected: Args }
-    | { name: string; cmd: string; outcome: 'exit'; expected: 1 };
+    | {
+          name: string;
+          cmd: string;
+          outcome: 'exit';
+          expected: { exit: number; logString: string };
+      };
 
 const testConfig: TestItem[] = [
     {
@@ -111,12 +116,16 @@ const testConfig: TestItem[] = [
             all: true,
         } satisfies DecompressArgs,
     },
-    // {
-    //     name: 'miss mmFile',
-    //     cmd: 'npm start truncate --before th1',
-    //     outcome: 'exit',
-    //     expected: 1,
-    // },
+    {
+        name: 'miss mmFile',
+        cmd: 'npm start truncate --before th1',
+        outcome: 'exit',
+        expected: {
+            exit: 1,
+            logString:
+                'Not enough non-option arguments: got 1, need at least 2',
+        },
+    },
     // {
     //     name: 'truncate before',
     //     cmd: 'npm start truncate examples/example.mm --before th1',
@@ -142,22 +151,31 @@ const testConfig: TestItem[] = [
 ];
 
 describe('parseArgs', () => {
-    afterEach(() => {
-        vi.resetAllMocks();
-    });
-
     testConfig.map(({ name, cmd, outcome, expected }) => {
         test(name, () => {
+            vi.resetAllMocks();
+
             const exitSpy = vi
                 .spyOn(process, 'exit')
                 .mockImplementation((() => {}) as never);
 
+            const errorSpy = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {});
+
             const result = parseArgs(cmd.split(' '));
 
-            expect(exitSpy).toBeCalledTimes(outcome === 'exit' ? 1 : 0);
-
-            if (outcome === 'return') {
-                expect(result).toEqual(expected);
+            switch (outcome) {
+                case 'return':
+                    expect(result).toEqual(expected);
+                    expect(exitSpy).toBeCalledTimes(0);
+                    break;
+                case 'exit':
+                    expect(exitSpy).toBeCalledTimes(1);
+                    expect(errorSpy).toBeCalledWith(expected.logString);
+                    break;
+                default:
+                    expect(true).toEqual(false);
             }
         });
     });
