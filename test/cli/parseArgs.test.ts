@@ -5,10 +5,11 @@ import {
     DecompressArgs,
     GetArgs,
     parseArgs,
+    TruncateAfterArgs,
     TruncateBeforeArgs,
+    TruncateCountArgs,
     UnifyArgs,
 } from '../../src/cli/parseArgs';
-import { afterEach } from 'node:test';
 
 type TestItem =
     | { name: string; cmd: string; outcome: 'return'; expected: Args }
@@ -136,6 +137,39 @@ const testConfig: TestItem[] = [
             subCommand: 'before',
             proofId: 'th1',
         } satisfies TruncateBeforeArgs,
+    },
+    {
+        name: 'truncate after',
+        cmd: 'npm start truncate examples/example.mm --after th1',
+        outcome: 'return',
+        expected: {
+            command: 'truncate',
+            mmFile: 'examples/example.mm',
+            subCommand: 'after',
+            proofId: 'th1',
+        } satisfies TruncateAfterArgs,
+    },
+    // {
+    //     name: 'truncate count with invalid number',
+    //     cmd: 'npm start truncate examples/example.mm --count zzz',
+    //     outcome: 'return',
+    //     expected: {
+    //         command: 'truncate',
+    //         mmFile: 'examples/example.mm',
+    //         subCommand: 'count',
+    //         count: 42,
+    //     } satisfies TruncateCountArgs,
+    // },
+    {
+        name: 'truncate count',
+        cmd: 'npm start truncate examples/example.mm --count 42',
+        outcome: 'return',
+        expected: {
+            command: 'truncate',
+            mmFile: 'examples/example.mm',
+            subCommand: 'count',
+            count: 42,
+        } satisfies TruncateCountArgs,
     },
 ];
 

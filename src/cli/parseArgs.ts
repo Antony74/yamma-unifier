@@ -235,9 +235,19 @@ export const parseArgs = (argv: string[]): Args => {
                     proofId: parsed.proofIdOrNumber,
                 } as TruncateBeforeArgs;
             } else if (parsed.after) {
-                return {} as TruncateAfterArgs;
+                return {
+                    command: 'truncate',
+                    mmFile: parsed.mmFile,
+                    subCommand: 'after',
+                    proofId: parsed.proofIdOrNumber,
+                } as TruncateAfterArgs;
             } else {
-                return {} as TruncateCountArgs;
+                return {
+                    command: 'truncate',
+                    mmFile: parsed.mmFile,
+                    subCommand: 'count',
+                    count: Number.parseInt(parsed.proofIdOrNumber as string),
+                } as TruncateCountArgs;
             }
         case 'unify':
         default:
