@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import {
     Args,
     CompressArgs,
@@ -8,13 +8,17 @@ import {
     TruncateBeforeArgs,
     UnifyArgs,
 } from '../../src/cli/parseArgs';
+import { afterEach } from 'node:test';
 
-type TestItem = { name: string; cmd: string; expected: Args };
+type TestItem =
+    | { name: string; cmd: string; outcome: 'return'; expected: Args }
+    | { name: string; cmd: string; outcome: 'exit'; expected: 1 };
 
 const testConfig: TestItem[] = [
     {
         name: 'unify zero .mmp files',
         cmd: 'npm start unify examples/example.mm',
+        outcome: 'return',
         expected: {
             command: 'unify',
             mmFile: 'examples/example.mm',
@@ -24,6 +28,7 @@ const testConfig: TestItem[] = [
     {
         name: 'unify one .mmp file',
         cmd: 'npm start unify examples/example.mm examples/ununified.mmp',
+        outcome: 'return',
         expected: {
             command: 'unify',
             mmFile: 'examples/example.mm',
@@ -33,6 +38,7 @@ const testConfig: TestItem[] = [
     {
         name: 'unify two .mmp files',
         cmd: 'npm start u examples/example.mm examples/ununified.mmp examples/unified.mmp',
+        outcome: 'return',
         expected: {
             command: 'unify',
             mmFile: 'examples/example.mm',
@@ -42,6 +48,7 @@ const testConfig: TestItem[] = [
     {
         name: 'get th1',
         cmd: 'npm start get examples/example.mm th1',
+        outcome: 'return',
         expected: {
             command: 'get',
             mmFile: 'examples/example.mm',
@@ -52,6 +59,7 @@ const testConfig: TestItem[] = [
     {
         name: 'get all proofs',
         cmd: 'npm start g examples/example.mm --all',
+        outcome: 'return',
         expected: {
             command: 'get',
             mmFile: 'examples/example.mm',
@@ -62,6 +70,7 @@ const testConfig: TestItem[] = [
     {
         name: 'compress a proof',
         cmd: 'npm start compress examples/example.mm th1',
+        outcome: 'return',
         expected: {
             command: 'compress',
             mmFile: 'examples/example.mm',
@@ -72,6 +81,7 @@ const testConfig: TestItem[] = [
     {
         name: 'compress all proofs',
         cmd: 'npm start compress examples/example.mm --all',
+        outcome: 'return',
         expected: {
             command: 'compress',
             mmFile: 'examples/example.mm',
@@ -82,6 +92,7 @@ const testConfig: TestItem[] = [
     {
         name: 'decompress a proof',
         cmd: 'npm start decompress examples/example.mm th1',
+        outcome: 'return',
         expected: {
             command: 'decompress',
             mmFile: 'examples/example.mm',
@@ -92,6 +103,7 @@ const testConfig: TestItem[] = [
     {
         name: 'decompress all proofs',
         cmd: 'npm start decompress examples/example.mm --all',
+        outcome: 'return',
         expected: {
             command: 'decompress',
             mmFile: 'examples/example.mm',
@@ -102,6 +114,13 @@ const testConfig: TestItem[] = [
     // {
     //     name: 'miss mmFile',
     //     cmd: 'npm start truncate --before th1',
+    //     outcome: 'exit',
+    //     expected: 1,
+    // },
+    // {
+    //     name: 'truncate before',
+    //     cmd: 'npm start truncate examples/example.mm --before th1',
+    //     outcome: 'return',
     //     expected: {
     //         command: 'truncate',
     //         mmFile: 'examples/example.mm',
@@ -111,7 +130,8 @@ const testConfig: TestItem[] = [
     // },
     {
         name: 'truncate before',
-        cmd: 'npm start truncate examples/example.mm --before th1',
+        cmd: 'npm start truncate examples/example.mm th1 --before',
+        outcome: 'return',
         expected: {
             command: 'truncate',
             mmFile: 'examples/example.mm',
@@ -122,10 +142,23 @@ const testConfig: TestItem[] = [
 ];
 
 describe('parseArgs', () => {
-    testConfig.map(({ name, cmd, expected }) => {
+    afterEach(() => {
+        vi.resetAllMocks();
+    });
+
+    testConfig.map(({ name, cmd, outcome, expected }) => {
         test(name, () => {
+            const exitSpy = vi
+                .spyOn(process, 'exit')
+                .mockImplementation((() => {}) as never);
+
             const result = parseArgs(cmd.split(' '));
-            expect(result).toEqual(expected);
+
+            expect(exitSpy).toBeCalledTimes(outcome === 'exit' ? 1 : 0);
+
+            if (outcome === 'return') {
+                expect(result).toEqual(expected);
+            }
         });
     });
 });

@@ -116,7 +116,6 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm file',
                         type: 'string',
-                        demandOption: true,
                     })
                     .positional('proofIds', {
                         describe:
@@ -136,7 +135,6 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm file',
                         type: 'string',
-                        demandOption: true,
                     })
                     .positional('proofIds', {
                         description:
@@ -156,7 +154,6 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm filename',
                         type: 'string',
-                        demandOption: true,
                     })
                     .option('before', {
                         alias: 'b',
@@ -180,7 +177,6 @@ export const parseArgs = (argv: string[]): Args => {
                         description:
                             'Proof to truncate .mm before or after, or total count of proofs desired after truncation',
                         type: 'string',
-                        demandOption: true,
                     });
             },
         )
