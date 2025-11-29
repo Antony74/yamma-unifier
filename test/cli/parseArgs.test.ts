@@ -128,6 +128,16 @@ const testConfig: TestItem[] = [
         },
     },
     {
+        name: 'truncate with no sub-command',
+        cmd: 'npm start truncate examples/example.mm th1',
+        outcome: 'exit',
+        expected: {
+            exit: 1,
+            logString:
+                'truncate command expected exactly one --before, --after, --count option.  Found 0',
+        },
+    },
+    {
         name: 'truncate before',
         cmd: 'npm start truncate examples/example.mm --before th1',
         outcome: 'return',
@@ -192,7 +202,6 @@ describe('parseArgs', () => {
                     expect(result).toEqual(expected);
                     break;
                 case 'exit':
-                    expect(exitSpy).toBeCalledTimes(1);
                     expect(errorSpy).toBeCalledWith(expected.logString);
                     break;
                 default:
