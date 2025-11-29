@@ -149,17 +149,15 @@ const testConfig: TestItem[] = [
             proofId: 'th1',
         } satisfies TruncateAfterArgs,
     },
-    // {
-    //     name: 'truncate count with invalid number',
-    //     cmd: 'npm start truncate examples/example.mm --count zzz',
-    //     outcome: 'return',
-    //     expected: {
-    //         command: 'truncate',
-    //         mmFile: 'examples/example.mm',
-    //         subCommand: 'count',
-    //         count: 42,
-    //     } satisfies TruncateCountArgs,
-    // },
+    {
+        name: 'truncate count with invalid number',
+        cmd: 'npm start truncate examples/example.mm --count zzz',
+        outcome: 'exit',
+        expected: {
+            exit: 1,
+            logString: 'truncate count expected a number.  Found zzz',
+        },
+    },
     {
         name: 'truncate count',
         cmd: 'npm start truncate examples/example.mm --count 42',
@@ -190,8 +188,8 @@ describe('parseArgs', () => {
 
             switch (outcome) {
                 case 'return':
-                    expect(result).toEqual(expected);
                     expect(exitSpy).toBeCalledTimes(0);
+                    expect(result).toEqual(expected);
                     break;
                 case 'exit':
                     expect(exitSpy).toBeCalledTimes(1);

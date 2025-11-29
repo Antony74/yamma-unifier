@@ -242,11 +242,21 @@ export const parseArgs = (argv: string[]): Args => {
                     proofId: parsed.proofIdOrNumber,
                 } as TruncateAfterArgs;
             } else {
+                const countString = parsed.proofIdOrNumber as string;
+                const count = Number.parseInt(countString);
+
+                if (isNaN(count)) {
+                    console.error(
+                        `truncate count expected a number.  Found ${countString}`,
+                    );
+                    process.exit(1);
+                }
+
                 return {
                     command: 'truncate',
                     mmFile: parsed.mmFile,
                     subCommand: 'count',
-                    count: Number.parseInt(parsed.proofIdOrNumber as string),
+                    count,
                 } as TruncateCountArgs;
             }
         case 'unify':
