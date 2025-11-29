@@ -126,20 +126,9 @@ const testConfig: TestItem[] = [
                 'Not enough non-option arguments: got 1, need at least 2',
         },
     },
-    // {
-    //     name: 'truncate before',
-    //     cmd: 'npm start truncate examples/example.mm --before th1',
-    //     outcome: 'return',
-    //     expected: {
-    //         command: 'truncate',
-    //         mmFile: 'examples/example.mm',
-    //         subCommand: 'before',
-    //         proofId: 'th1',
-    //     } satisfies TruncateBeforeArgs,
-    // },
     {
         name: 'truncate before',
-        cmd: 'npm start truncate examples/example.mm th1 --before',
+        cmd: 'npm start truncate examples/example.mm --before th1',
         outcome: 'return',
         expected: {
             command: 'truncate',
