@@ -43,18 +43,21 @@ export type DecompressArgs = {
 
 export type TruncateBeforeArgs = {
     command: 'truncate';
+    mmFile: string;
     subCommand: 'before';
-    proofIds: string;
+    proofId: string;
 };
 
 export type TruncateAfterArgs = {
     command: 'truncate';
+    mmFile: string;
     subCommand: 'after';
-    proofIds: string;
+    proofId: string;
 };
 
 export type TruncateCountArgs = {
     command: 'truncate';
+    mmFile: string;
     subCommand: 'count';
     count: number;
 };
@@ -79,7 +82,6 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm file',
                         type: 'string',
-                        demandOption: true,
                     })
                     .positional('mmpFilenames', {
                         description: 'Zero or more .mmp files',
@@ -95,7 +97,6 @@ export const parseArgs = (argv: string[]): Args => {
                     .positional('mmFile', {
                         description: 'A .mm file',
                         type: 'string',
-                        demandOption: true,
                     })
                     .positional('proofIds', {
                         description:
@@ -148,7 +149,7 @@ export const parseArgs = (argv: string[]): Args => {
             },
         )
         .command(
-            ['truncate <proofIdOrNumber>', 't'],
+            ['truncate <mmFile> <proofIdOrNumber>', 't'],
             'Truncate .mm file',
             (yargs) => {
                 return yargs
@@ -231,7 +232,12 @@ export const parseArgs = (argv: string[]): Args => {
             }
 
             if (parsed.before) {
-                return {} as TruncateBeforeArgs;
+                return {
+                    command: 'truncate',
+                    mmFile: parsed.mmFile,
+                    subCommand: 'before',
+                    proofId: parsed.proofIdOrNumber,
+                } as TruncateBeforeArgs;
             } else if (parsed.after) {
                 return {} as TruncateAfterArgs;
             } else {

@@ -5,6 +5,7 @@ import {
     DecompressArgs,
     GetArgs,
     parseArgs,
+    TruncateBeforeArgs,
     UnifyArgs,
 } from '../../src/cli/parseArgs';
 
@@ -97,6 +98,26 @@ const testConfig: TestItem[] = [
             proofIds: [],
             all: true,
         } satisfies DecompressArgs,
+    },
+    // {
+    //     name: 'miss mmFile',
+    //     cmd: 'npm start truncate --before th1',
+    //     expected: {
+    //         command: 'truncate',
+    //         mmFile: 'examples/example.mm',
+    //         subCommand: 'before',
+    //         proofId: 'th1',
+    //     } satisfies TruncateBeforeArgs,
+    // },
+    {
+        name: 'truncate before',
+        cmd: 'npm start truncate examples/example.mm --before th1',
+        expected: {
+            command: 'truncate',
+            mmFile: 'examples/example.mm',
+            subCommand: 'before',
+            proofId: 'th1',
+        } satisfies TruncateBeforeArgs,
     },
 ];
 
