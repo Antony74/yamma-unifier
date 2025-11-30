@@ -7,6 +7,7 @@ import { parseArgs } from './parseArgs';
 import { info } from './diagnosticsString';
 import { unify } from './unify';
 import { get } from './get';
+import { modifyMm } from '../api/modifyMm';
 
 export const cli = async () => {
     const startTime = performance.now();
@@ -16,19 +17,25 @@ export const cli = async () => {
 
     try {
         info(`reading ${mmFile}`);
-        const mmData = await fsp.readFile(mmFile, { encoding: 'utf-8' });
-
-        const unifier = await createUnifierWithProgress(mmFile, mmData);
+        const mmData = await fsp.readFile(mmFile, {
+            encoding: 'utf-8',
+        });
 
         switch (command) {
-            case 'unify':
+            case 'unify': {
+                const unifier = await createUnifierWithProgress(mmFile, mmData);
                 await unify(unifier, args.mmpFiles);
                 break;
-            case 'get':
+            }
+            case 'get': {
+                const unifier = await createUnifierWithProgress(mmFile, mmData);
                 await get(unifier, args.proofIds);
                 break;
-            default:
-                throw new Error(`Command '${command} is not implemented yet`);
+            }
+            default: {
+                modifyMm(args, mmData);
+                break;
+            }
         }
 
         const endTime = performance.now();

@@ -1,5 +1,6 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { CompressArgs, DecompressArgs, ModifyMmArgs, TruncateAfterArgs, TruncateBeforeArgs, TruncateCountArgs } from '../api/modifyMm';
 
 const commands = [
     'unify',
@@ -27,49 +28,10 @@ export type GetArgs = {
     all: boolean | undefined;
 };
 
-export type CompressArgs = {
-    command: 'compress';
-    mmFile: string;
-    proofIds: string[];
-    all: boolean | undefined;
-};
-
-export type DecompressArgs = {
-    command: 'decompress';
-    mmFile: string;
-    proofIds: string[];
-    all: boolean | undefined;
-};
-
-export type TruncateBeforeArgs = {
-    command: 'truncate';
-    mmFile: string;
-    subCommand: 'before';
-    proofId: string;
-};
-
-export type TruncateAfterArgs = {
-    command: 'truncate';
-    mmFile: string;
-    subCommand: 'after';
-    proofId: string;
-};
-
-export type TruncateCountArgs = {
-    command: 'truncate';
-    mmFile: string;
-    subCommand: 'count';
-    count: number;
-};
-
 export type Args =
     | UnifyArgs
     | GetArgs
-    | CompressArgs
-    | DecompressArgs
-    | TruncateBeforeArgs
-    | TruncateAfterArgs
-    | TruncateCountArgs;
+    | ModifyMmArgs;
 
 export const parseArgs = (argv: string[]): Args => {
     const parsed = yargs(hideBin(argv))
