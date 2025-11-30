@@ -7,6 +7,7 @@ import { parseArgs } from './parseArgs';
 import { info } from './diagnosticsString';
 import { unify } from './unify';
 import { get } from './get';
+import { ProvableStatement } from 'yamma-server/src/mm/ProvableStatement';
 
 export const cli = async () => {
     const startTime = performance.now();
@@ -30,6 +31,17 @@ export const cli = async () => {
             default:
                 throw new Error(`Command '${command} is not implemented yet`);
         }
+
+        const proofCount = Array.from(unifier.mmParser.labelToNonSyntaxAssertionMap).filter(
+            ([_label, labeledStatement]) => {
+                return labeledStatement instanceof ProvableStatement;
+            },
+        ).length;
+
+        const endTime = performance.now();
+        info(
+            `done (${prettyms(endTime - startTime)}, ${proofCount} ${proofCount === 1 ? 'proof' : 'proofs'})`,
+        );
     } catch (e) {
         if (e instanceof Error) {
             console.error(e.message);
@@ -38,7 +50,4 @@ export const cli = async () => {
             throw e;
         }
     }
-
-    const endTime = performance.now();
-    info(`done (${prettyms(endTime - startTime)})`);
 };
