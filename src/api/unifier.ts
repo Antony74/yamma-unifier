@@ -25,7 +25,7 @@ export const createUnifier: CreateUnifier = async (
             ? await parseMm(mmData, completeConfig)
             : mmData;
 
-    return {
+    const unifier: Unifier = {
         unify: (mmpData: string | MmpParser): UnifierResult => {
             const mmpParser: MmpParser =
                 typeof mmpData === 'string'
@@ -48,8 +48,14 @@ export const createUnifier: CreateUnifier = async (
             return result;
         },
 
+        get: (proofId: string): UnifierResult => {
+            return unifier.unify(`$getproof ${proofId}`);
+        },
+
         mmParser,
     };
+
+    return unifier;
 };
 
 export const parseMm: ParseMm = async (
@@ -60,7 +66,9 @@ export const parseMm: ParseMm = async (
 
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
     mmParser.ParseText(mmData);
-    await mmParser.createParseNodesForAssertionsAsync(completeConfig.mm.progressCallback);
+    await mmParser.createParseNodesForAssertionsAsync(
+        completeConfig.mm.progressCallback,
+    );
 
     return mmParser;
 };

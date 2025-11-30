@@ -1,17 +1,13 @@
 import fsp from 'fs/promises';
 import { parseMmp } from '../api/unifier';
 import { getDiagnosticsString, info } from './diagnosticsString';
-import { Unifier } from '../api/unifierDefinitions';
+import { Unifier, UnifierResult } from '../api/unifierDefinitions';
 
-export const unifyString = async (
+export const processUnifierResult = async (
     unifier: Unifier,
+    result: UnifierResult,
     mmpFilename: string,
-    mmpUnunifiedData: string,
-    verb: string,
 ) => {
-    info(`${verb} ${mmpFilename}`);
-    const result = unifier.unify(mmpUnunifiedData);
-
     const diagnosticsString = getDiagnosticsString(
         mmpFilename,
         parseMmp(result.text, unifier.mmParser),
@@ -35,6 +31,9 @@ export const unify = async (unifier: Unifier, mmpFilenames: string[]) => {
             encoding: 'utf-8',
         });
 
-        await unifyString(unifier, mmpFilename, mmpUnunifiedData, 'unifying');
+        info(`unifying ${mmpFilename}`);
+        const result = unifier.unify(mmpUnunifiedData);
+
+        await processUnifierResult(unifier, result, mmpFilename);
     }
 };

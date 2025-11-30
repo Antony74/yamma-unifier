@@ -14,6 +14,7 @@ export type UnifierResult = {
 
 export type Unifier = {
     unify: (mmpData: string | MmpParser) => UnifierResult;
+    get: (proofId: string) => UnifierResult;
     mmParser: MmParser;
 };
 
