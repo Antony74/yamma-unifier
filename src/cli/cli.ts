@@ -3,6 +3,7 @@ import { createUnifierWithProgress } from './createUnifierWithProgress';
 import { parseArgs } from './parseArgs';
 import { info } from './diagnosticsString';
 import { unify } from './unify';
+import { get } from './get';
 
 export const cli = async () => {
     const args = parseArgs(process.argv);
@@ -16,12 +17,14 @@ export const cli = async () => {
 
         switch (command) {
             case 'unify':
-                await unify(unifier, args.mmpFiles)
+                await unify(unifier, args.mmpFiles);
+                break;
+            case 'get':
+                await get(unifier, args.proofIds);
                 break;
             default:
                 throw new Error(`Command '${command} is not implemented yet`);
         }
-
     } catch (e) {
         if (e instanceof Error) {
             console.error(e.message);
