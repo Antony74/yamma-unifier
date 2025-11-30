@@ -5,50 +5,18 @@ import { UnifierConfig } from './unifierDefinitions';
 import { MmParser } from 'yamma-server/src/mm/MmParser';
 import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
 
-export type CompressArgs = {
-    command: 'compress';
-    mmFile: string;
-    proofIds: string[];
-    all: boolean | undefined;
-};
+const commands = [
+    'compress',
+    'decompress',
+    'truncateBefore',
+    'truncateAfter',
+    'truncateCount',
+] as const;
 
-export type DecompressArgs = {
-    command: 'decompress';
-    mmFile: string;
-    proofIds: string[];
-    all: boolean | undefined;
-};
-
-export type TruncateBeforeArgs = {
-    command: 'truncate';
-    mmFile: string;
-    subCommand: 'before';
-    proofId: string;
-};
-
-export type TruncateAfterArgs = {
-    command: 'truncate';
-    mmFile: string;
-    subCommand: 'after';
-    proofId: string;
-};
-
-export type TruncateCountArgs = {
-    command: 'truncate';
-    mmFile: string;
-    subCommand: 'count';
-    count: number;
-};
-
-export type ModifyMmArgs =
-    | CompressArgs
-    | DecompressArgs
-    | TruncateBeforeArgs
-    | TruncateAfterArgs
-    | TruncateCountArgs;
+export type Command = (typeof commands)[number];
 
 export const modifyMm = (
-    _args: ModifyMmArgs,
+    _command: Command,
     mmData: string,
     config?: UnifierConfig,
 ): string => {

@@ -8,6 +8,7 @@ import { info } from './diagnosticsString';
 import { unify } from './unify';
 import { get } from './get';
 import { modifyMm } from '../api/modifyMm';
+import { mapToModifyArgs } from './mapToModifyArgs';
 
 export const cli = async () => {
     const startTime = performance.now();
@@ -33,7 +34,8 @@ export const cli = async () => {
                 break;
             }
             default: {
-                modifyMm(args, mmData);
+                const modifyArgs = mapToModifyArgs(args);
+                modifyMm(modifyArgs.command, mmData);
                 break;
             }
         }
