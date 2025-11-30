@@ -66,10 +66,6 @@ export const parseMm: ParseMm = async (
 
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
 
-    mmParser.on(MmParserEvents.newProvableStatement, (assertion: AssertionParsedArgs) => {
-        console.log(`newProvableStatement ${assertion.labeledStatement.Label}`)
-    });
-
     mmParser.ParseText(mmData);
     await mmParser.createParseNodesForAssertionsAsync(
         completeConfig.mm.progressCallback,
