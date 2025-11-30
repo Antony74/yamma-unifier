@@ -1,4 +1,7 @@
 import fsp from 'fs/promises';
+
+import prettyms from 'pretty-ms';
+
 import { createUnifierWithProgress } from './createUnifierWithProgress';
 import { parseArgs } from './parseArgs';
 import { info } from './diagnosticsString';
@@ -6,6 +9,8 @@ import { unify } from './unify';
 import { get } from './get';
 
 export const cli = async () => {
+    const startTime = performance.now();
+
     const args = parseArgs(process.argv);
     const { mmFile, command } = args;
 
@@ -34,5 +39,6 @@ export const cli = async () => {
         }
     }
 
-    info('done');
+    const endTime = performance.now();
+    info(`done (${prettyms(endTime - startTime)})`);
 };
