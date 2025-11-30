@@ -156,7 +156,7 @@ const testConfig: TestItem[] = [
             command: 'truncate',
             mmFile: 'examples/example.mm',
             subCommand: 'before',
-            proofId: 'th1',
+            proofIdOrNumber: 'th1',
         } satisfies TruncateBeforeArgs,
     },
     {
@@ -167,7 +167,7 @@ const testConfig: TestItem[] = [
             command: 'truncate',
             mmFile: 'examples/example.mm',
             subCommand: 'after',
-            proofId: 'th1',
+            proofIdOrNumber: 'th1',
         } satisfies TruncateAfterArgs,
     },
     {
@@ -187,7 +187,7 @@ const testConfig: TestItem[] = [
             command: 'truncate',
             mmFile: 'examples/example.mm',
             subCommand: 'count',
-            count: 42,
+            proofIdOrNumber: '42',
         } satisfies TruncateCountArgs,
     },
 ];
