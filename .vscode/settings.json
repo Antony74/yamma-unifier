@@ -15,6 +15,8 @@
         ".git/{index,*refs,*HEAD}",
         ".vscode",
         ".vscode-insiders",
-        "yamma"
+        "yamma",
+        "**/*.mm",
+        "**/*.mmp"
     ]
 }
