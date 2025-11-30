@@ -1,5 +1,5 @@
 import { UnifierConfig } from './unifierDefinitions';
-import { MmParser } from 'yamma-server/src/mm/MmParser';
+import { MmParser, MmParserEvents } from 'yamma-server/src/mm/MmParser';
 import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
 import { tokenize } from './tokenize';
 import { ModifyingTokenReader } from './modifyingTokenReader';
@@ -15,16 +15,33 @@ const commands = [
 export type Command = (typeof commands)[number];
 
 export const modifyMm = (
-    _command: Command,
+    command: Command,
     mmData: string,
+    proofIdOrCount: string,
     config?: UnifierConfig,
 ): string => {
     const completeConfig = applyDefaultsToConfig(config);
-    const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
 
     const mmTokens = tokenize(mmData);
-
     const tokenReader = new ModifyingTokenReader(mmTokens);
+
+    const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
+
+    switch (command) {
+        case 'truncateCount':
+            let count = parseInt(proofIdOrCount);
+
+            mmParser.on(MmParserEvents.newProvableStatement, () => {
+                --count;
+                if (count === 0) {
+                    tokenReader.setWriting(false);
+                }
+            });
+            break;
+        default:
+            throw new Error(`${command} is not implemented yet`);
+    }
+
     mmParser.parseFromTokenReader(tokenReader);
 
     return tokenReader.chunks.join('');

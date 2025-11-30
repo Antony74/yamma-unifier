@@ -45,21 +45,21 @@ export type TruncateBeforeArgs = {
     command: 'truncate';
     mmFile: string;
     subCommand: 'before';
-    proofId: string;
+    proofIdOrNumber: string;
 };
 
 export type TruncateAfterArgs = {
     command: 'truncate';
     mmFile: string;
     subCommand: 'after';
-    proofId: string;
+    proofIdOrNumber: string;
 };
 
 export type TruncateCountArgs = {
     command: 'truncate';
     mmFile: string;
     subCommand: 'count';
-    count: number;
+    proofIdOrNumber: string;
 };
 
 export type Args =
@@ -232,14 +232,14 @@ export const parseArgs = (argv: string[]): Args => {
                     command: 'truncate',
                     mmFile: parsed.mmFile,
                     subCommand: 'before',
-                    proofId: parsed.proofIdOrNumber,
+                    proofIdOrNumber: parsed.proofIdOrNumber,
                 } as TruncateBeforeArgs;
             } else if (parsed.after) {
                 return {
                     command: 'truncate',
                     mmFile: parsed.mmFile,
                     subCommand: 'after',
-                    proofId: parsed.proofIdOrNumber,
+                    proofIdOrNumber: parsed.proofIdOrNumber,
                 } as TruncateAfterArgs;
             } else {
                 const countString = parsed.proofIdOrNumber as string;
@@ -256,7 +256,7 @@ export const parseArgs = (argv: string[]): Args => {
                     command: 'truncate',
                     mmFile: parsed.mmFile,
                     subCommand: 'count',
-                    count,
+                    proofIdOrNumber: countString,
                 } as TruncateCountArgs;
             }
         case 'unify':

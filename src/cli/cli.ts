@@ -33,14 +33,20 @@ export const cli = async () => {
                 await get(unifier, args.proofIds);
                 break;
             }
-            default: {
+            case 'truncate': {
                 info(`modifying ${mmFile}`);
                 const modifyArgs = mapToModifyArgs(args);
-                const result = modifyMm(modifyArgs.command, mmData);
+                const result = modifyMm(
+                    modifyArgs.command,
+                    mmData,
+                    args.proofIdOrNumber,
+                );
                 info(`writing ${mmFile}`);
-                await fsp.writeFile(mmFile + '.mm', result);
+                await fsp.writeFile(mmFile, result);
                 break;
             }
+            default:
+                throw new Error(`${command} is not implemented yet`);
         }
 
         const endTime = performance.now();
