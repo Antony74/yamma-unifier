@@ -85,6 +85,17 @@ const testConfig: TestItem[] = [
         } satisfies CompressArgs,
     },
     {
+        name: 'compress nothing',
+        cmd: 'npm start compress examples/example.mm',
+        outcome: 'return',
+        expected: {
+            command: 'compress',
+            mmFile: 'examples/example.mm',
+            proofIds: [],
+            all: undefined,
+        } satisfies CompressArgs,
+    },
+    {
         name: 'compress all proofs',
         cmd: 'npm start compress examples/example.mm --all',
         outcome: 'return',
