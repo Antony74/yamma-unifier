@@ -34,8 +34,11 @@ export const cli = async () => {
                 break;
             }
             default: {
+                info(`modifying ${mmFile}`);
                 const modifyArgs = mapToModifyArgs(args);
-                modifyMm(modifyArgs.command, mmData);
+                const result = modifyMm(modifyArgs.command, mmData);
+                info(`writing ${mmFile}`);
+                await fsp.writeFile(mmFile + '.mm', result);
                 break;
             }
         }
