@@ -4,6 +4,8 @@ import { TokensCreator } from 'yamma-server/src/mm/TokensCreator';
 import { UnifierConfig } from './unifierDefinitions';
 import { MmParser } from 'yamma-server/src/mm/MmParser';
 import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
+import fsp from 'fs/promises';
+import { tokenize } from './tokenize';
 
 const commands = [
     'compress',
@@ -26,7 +28,18 @@ export const modifyMm = (
     const tokensCreator: TokensCreator = new TokensCreator();
     const mmTokens: MmToken[] = tokensCreator.createTokensFromText(mmData);
 
-    console.log(JSON.stringify(mmTokens, null, 4));
+    const newTokens = tokenize(mmData);
+
+    fsp.writeFile('oldTokens.json', JSON.stringify(mmTokens, null, 4));
+    
+    fsp.writeFile(
+        'newTokens.json',
+        JSON.stringify(
+            newTokens.filter((token) => token.type !== 'ws'),
+            null,
+            4,
+        ),
+    );
 
     const tokenReader: TokenReader = new TokenReader(mmTokens);
     mmParser.parseFromTokenReader(tokenReader);
