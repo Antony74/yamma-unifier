@@ -9,11 +9,6 @@ const commands = [
     'truncate',
 ] as const;
 
-const truncateSubCommands = ['before', 'after', 'count'] as const;
-
-export type Command = (typeof commands)[number];
-export type TruncateSubCommand = (typeof truncateSubCommands)[number];
-
 export type CommonArgs = {
     mmFile: string;
     singleThread: boolean;
@@ -27,19 +22,19 @@ export type UnifyArgs = CommonArgs & {
 export type GetArgs = CommonArgs & {
     command: 'get';
     proofIds: string[];
-    all: boolean | undefined;
+    all: boolean;
 };
 
 export type CompressArgs = CommonArgs & {
     command: 'compress';
     proofIds: string[];
-    all: boolean | undefined;
+    all: boolean;
 };
 
 export type DecompressArgs = CommonArgs & {
     command: 'decompress';
     proofIds: string[];
-    all: boolean | undefined;
+    all: boolean;
 };
 
 export type TruncateBeforeArgs = CommonArgs & {

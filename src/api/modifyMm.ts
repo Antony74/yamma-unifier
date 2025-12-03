@@ -11,22 +11,47 @@ import { tokenize } from './tokenize';
 import { ModifyingTokenReader } from './modifyingTokenReader';
 import { MmToken } from 'yamma-server/src/grammar/MmLexer';
 
-const commands = [
-    'compress',
-    'decompress',
-    'truncateBefore',
-    'truncateAfter',
-    'truncateCount',
-] as const;
+export type ModifyMmCommonArgs = {
+    mmData: string;
+    config?: UnifierConfig;
+};
 
-export type Command = (typeof commands)[number];
+export type ModifyMmCompressArgs = ModifyMmCommonArgs & {
+    command: 'compress';
+    proofIds: string[];
+    all: boolean;
+};
 
-export const modifyMm = (
-    command: Command,
-    mmData: string,
-    proofIdOrCount: string,
-    config?: UnifierConfig,
-): string => {
+export type ModifyMmDecompressArgs = ModifyMmCommonArgs & {
+    command: 'decompress';
+    proofIds: string[];
+    all: boolean;
+};
+
+export type ModifyMmTruncateBeforeArgs = ModifyMmCommonArgs & {
+    command: 'truncateBefore';
+    proofId: string;
+};
+
+export type ModifyMmTruncateAfterArgs = ModifyMmCommonArgs & {
+    command: 'truncateAfter';
+    proofId: string;
+};
+
+export type ModifyMmTruncateCountArgs = ModifyMmCommonArgs & {
+    command: 'truncateCount';
+    count: number;
+};
+
+export type ModifyMmArgs =
+    | ModifyMmCompressArgs
+    | ModifyMmDecompressArgs
+    | ModifyMmTruncateBeforeArgs
+    | ModifyMmTruncateAfterArgs
+    | ModifyMmTruncateCountArgs;
+
+export const modifyMm = (args: ModifyMmArgs): string => {
+    const { command, config, mmData } = args;
     const completeConfig = applyDefaultsToConfig(config);
 
     const mmTokens = tokenize(mmData);
@@ -50,7 +75,7 @@ export const modifyMm = (
 
         //     break;
         case 'truncateCount':
-            let count = parseInt(proofIdOrCount);
+            let { count } = args;
 
             mmParser.on(MmParserEvents.newProvableStatement, () => {
                 --count;
@@ -63,7 +88,7 @@ export const modifyMm = (
             throw new Error(`${command} is not implemented yet`);
     }
 
-    //    mmParser.parseFromTokenReader(tokenReader);
+    mmParser.parseFromTokenReader(tokenReader);
 
     return tokenReader.chunks.join('');
 };

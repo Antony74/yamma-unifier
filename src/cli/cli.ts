@@ -43,12 +43,8 @@ export const cli = async () => {
             }
             case 'truncate': {
                 info(`modifying ${mmFile}`);
-                const modifyArgs = mapToModifyArgs(args);
-                const result = modifyMm(
-                    modifyArgs.command,
-                    mmData,
-                    args.proofIdOrCount,
-                );
+                const modifyArgs = mapToModifyArgs(args, mmData);
+                const result = modifyMm(modifyArgs);
                 info(`writing ${mmFile}`);
                 await fsp.writeFile(mmFile, result);
                 break;
