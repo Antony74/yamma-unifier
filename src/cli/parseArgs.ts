@@ -45,19 +45,19 @@ export type DecompressArgs = CommonArgs & {
 export type TruncateBeforeArgs = CommonArgs & {
     command: 'truncate';
     subCommand: 'before';
-    proofIdOrNum: string;
+    proofIdOrCount: string;
 };
 
 export type TruncateAfterArgs = CommonArgs & {
     command: 'truncate';
     subCommand: 'after';
-    proofIdOrNum: string;
+    proofIdOrCount: string;
 };
 
 export type TruncateCountArgs = CommonArgs & {
     command: 'truncate';
     subCommand: 'count';
-    proofIdOrNum: string;
+    proofIdOrCount: string;
 };
 
 export type Args =
@@ -145,7 +145,7 @@ export const parseArgs = (argv: string[]): Args => {
             },
         )
         .command(
-            ['truncate <mmFile> <proofIdOrNum>', 't'],
+            ['truncate <mmFile> <proofIdOrCount>', 't'],
             'Truncate .mm file',
             (yargs) => {
                 return yargs
@@ -171,7 +171,7 @@ export const parseArgs = (argv: string[]): Args => {
                         description:
                             'File should be truncated at the given count of proofs',
                     })
-                    .positional('proofIdOrNum', {
+                    .positional('proofIdOrCount', {
                         description:
                             'Proof to truncate .mm before or after, or total count of proofs desired after truncation',
                         type: 'string',
@@ -196,7 +196,7 @@ export const parseArgs = (argv: string[]): Args => {
                 command: 'get',
                 mmFile: parsed.mmFile as string,
                 proofIds: parsed.proofIds as string[],
-                all: parsed.all ? true: false,
+                all: parsed.all ? true : false,
                 singleThread: parsed.singleThread ? true : false,
             };
         case 'compress':
@@ -204,7 +204,7 @@ export const parseArgs = (argv: string[]): Args => {
                 command: 'compress',
                 mmFile: parsed.mmFile as string,
                 proofIds: parsed.proofIds as string[],
-                all: parsed.all ? true: false,
+                all: parsed.all ? true : false,
                 singleThread: parsed.singleThread ? true : false,
             };
         case 'decompress':
@@ -212,7 +212,7 @@ export const parseArgs = (argv: string[]): Args => {
                 command: 'decompress',
                 mmFile: parsed.mmFile as string,
                 proofIds: parsed.proofIds as string[],
-                all: parsed.all ? true: false,
+                all: parsed.all ? true : false,
                 singleThread: parsed.singleThread ? true : false,
             };
         case 'truncate':
@@ -234,7 +234,7 @@ export const parseArgs = (argv: string[]): Args => {
                     command: 'truncate',
                     mmFile: parsed.mmFile as string,
                     subCommand: 'before',
-                    proofIdOrNum: parsed.proofIdOrNum as string,
+                    proofIdOrCount: parsed.proofIdOrCount as string,
                     singleThread: parsed.singleThread ? true : false,
                 };
             } else if (parsed.after) {
@@ -242,11 +242,11 @@ export const parseArgs = (argv: string[]): Args => {
                     command: 'truncate',
                     mmFile: parsed.mmFile as string,
                     subCommand: 'after',
-                    proofIdOrNum: parsed.proofIdOrNum as string,
+                    proofIdOrCount: parsed.proofIdOrCount as string,
                     singleThread: parsed.singleThread ? true : false,
                 };
             } else {
-                const countString = parsed.proofIdOrNum as string;
+                const countString = parsed.proofIdOrCount as string;
                 const count = Number.parseInt(countString);
 
                 if (isNaN(count)) {
@@ -260,7 +260,7 @@ export const parseArgs = (argv: string[]): Args => {
                     command: 'truncate',
                     mmFile: parsed.mmFile as string,
                     subCommand: 'count',
-                    proofIdOrNum: countString,
+                    proofIdOrCount: countString,
                     singleThread: parsed.singleThread ? true : false,
                 };
             }

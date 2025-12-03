@@ -10,7 +10,6 @@ export class ModifyingTokenReader extends TokenReader {
         let token: MmToken | undefined;
 
         while (!!(token = super.Read())) {
-
             if (this.writing) {
                 this.chunks[this.chunks.length - 1] += token.value;
             }

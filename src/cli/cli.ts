@@ -24,12 +24,20 @@ export const cli = async () => {
 
         switch (command) {
             case 'unify': {
-                const unifier = await createUnifierWithProgress(mmFile, mmData, args.singleThread);
+                const unifier = await createUnifierWithProgress(
+                    mmFile,
+                    mmData,
+                    args.singleThread,
+                );
                 await unify(unifier, args.mmpFiles);
                 break;
             }
             case 'get': {
-                const unifier = await createUnifierWithProgress(mmFile, mmData, args.singleThread);
+                const unifier = await createUnifierWithProgress(
+                    mmFile,
+                    mmData,
+                    args.singleThread,
+                );
                 await get(unifier, args.proofIds);
                 break;
             }
@@ -39,7 +47,7 @@ export const cli = async () => {
                 const result = modifyMm(
                     modifyArgs.command,
                     mmData,
-                    args.proofIdOrNum,
+                    args.proofIdOrCount,
                 );
                 info(`writing ${mmFile}`);
                 await fsp.writeFile(mmFile, result);

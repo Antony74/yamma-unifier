@@ -1,8 +1,15 @@
 import { UnifierConfig } from './unifierDefinitions';
-import { MmParser, MmParserEvents } from 'yamma-server/src/mm/MmParser';
+
+import {
+    AssertionParsedArgs,
+    MmParser,
+    MmParserEvents,
+} from 'yamma-server/src/mm/MmParser';
+
 import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
 import { tokenize } from './tokenize';
 import { ModifyingTokenReader } from './modifyingTokenReader';
+import { MmToken } from 'yamma-server/src/grammar/MmLexer';
 
 const commands = [
     'compress',
@@ -28,6 +35,20 @@ export const modifyMm = (
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
 
     switch (command) {
+        // case 'compress':
+        //     let proofStart;
+
+        //     mmParser.on(MmParserEvents.proofStart, (token: MmToken) => {
+        //         proofStart = token;
+        //     });
+
+        //     mmParser.on(
+        //         MmParserEvents.newProvableStatement,
+        //         (assertionArgs: AssertionParsedArgs) => {
+        //         },
+        //     );
+
+        //     break;
         case 'truncateCount':
             let count = parseInt(proofIdOrCount);
 
@@ -42,7 +63,7 @@ export const modifyMm = (
             throw new Error(`${command} is not implemented yet`);
     }
 
-//    mmParser.parseFromTokenReader(tokenReader);
+    //    mmParser.parseFromTokenReader(tokenReader);
 
     return tokenReader.chunks.join('');
 };

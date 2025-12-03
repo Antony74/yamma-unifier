@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest';
 import { createUnifier } from '../../src/api/unifier';
 import { exampleFiles } from '../examples';
 

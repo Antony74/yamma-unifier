@@ -25,7 +25,10 @@ export type VariableKindConfig = {
 };
 
 export type MmConfig = Omit<
-    IExtensionSettings & { progressCallback: ProgressCallback, singleThread: boolean },
+    IExtensionSettings & {
+        progressCallback: ProgressCallback;
+        singleThread: boolean;
+    },
     'variableKindsConfiguration' | 'proofMode'
 >;
 
