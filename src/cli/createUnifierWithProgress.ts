@@ -1,4 +1,3 @@
-import { createPrompt, useState, useEffect } from '@inquirer/core';
 import * as color from 'picocolors';
 import { ProgressCallback } from 'yamma-server/src/parseNodesCreatorThread/ParseNodesCreator';
 import { ProvableStatement } from 'yamma-server/src/mm/ProvableStatement';
@@ -10,42 +9,39 @@ export const createUnifierWithProgress = async (
     mmData: string,
     singleThread: boolean,
 ): Promise<Unifier> => {
-    const prompt = createPrompt<Unifier, {}>((_config, done): string => {
-        const [progress, setProgress] = useState(0);
-        const [proofCount, setProofCount] = useState<null | number>(null);
-
-        useEffect(() => {
-            const progressCallback: ProgressCallback = (message) => {
-                if (message.kind === 'progress') {
-                    setProgress(message.index / message.count);
-                }
-            };
-
-            createUnifier(mmData, {
-                mm: { progressCallback, singleThread },
-            }).then((unifier) => {
-                setProofCount(
-                    Array.from(
-                        unifier.mmParser.labelToNonSyntaxAssertionMap,
-                    ).filter(([_label, labeledStatement]) => {
-                        return labeledStatement instanceof ProvableStatement;
-                    }).length,
-                );
-
-                setProgress(1);
-                done(unifier);
-            });
-        }, []);
-
+    const setProgress = (progress: number, proofCount?: number) => {
         const proofCountString =
-            proofCount === null
+            proofCount === undefined
                 ? ''
                 : `(${proofCount} ${proofCount === 1 ? 'proof' : 'proofs'})`;
 
-        return color.gray(
-            `parsing ${mmFilename}... ${Math.round(progress * 100)}% ${proofCountString}`,
+        process.stdout.write(
+            '\r' +
+                color.gray(
+                    `parsing ${mmFilename}... ${Math.round(progress * 100)}% ${proofCountString}`,
+                ),
         );
+    };
+
+    setProgress(0);
+
+    const progressCallback: ProgressCallback = (message) => {
+        if (message.kind === 'progress') {
+            setProgress(message.index / message.count);
+        }
+    };
+
+    const unifier = await createUnifier(mmData, {
+        mm: { progressCallback, singleThread },
     });
 
-    return prompt({});
+    const proofCount = Array.from(
+        unifier.mmParser.labelToNonSyntaxAssertionMap,
+    ).filter(([_label, labeledStatement]) => {
+        return labeledStatement instanceof ProvableStatement;
+    }).length;
+
+    setProgress(1, proofCount);
+    console.log();
+    return unifier;
 };
