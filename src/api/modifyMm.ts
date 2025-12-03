@@ -64,7 +64,7 @@ export const modifyMm = (args: ModifyMmArgs): string => {
         case 'decompress':
             let lastLabelStart: number;
 
-            mmParser.on(MmParserEvents.proofLabel, (token: MmToken) => {
+            mmParser.on(MmParserEvents.newLabel, (token: MmToken) => {
                 lastLabelStart = tokenReader.output.length - token.value.length;
             });
 
