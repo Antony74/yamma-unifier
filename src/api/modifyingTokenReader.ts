@@ -4,14 +4,14 @@ import { TokenReader } from 'yamma-server/src/mm/TokenReader';
 export class ModifyingTokenReader extends TokenReader {
     private writing = true;
 
-    chunks: string[] = [''];
+    output: string = '';
 
     Read(): MmToken | undefined {
         let token: MmToken | undefined;
 
         while (!!(token = super.Read())) {
             if (this.writing) {
-                this.chunks[this.chunks.length - 1] += token.value;
+                this.output += token.value;
             }
 
             if (token.type !== 'ws') {
@@ -23,10 +23,6 @@ export class ModifyingTokenReader extends TokenReader {
     }
 
     setWriting(writing: boolean) {
-        if (writing === true && this.writing === false) {
-            this.chunks.push('');
-        }
-
         this.writing = writing;
     }
 }

@@ -60,20 +60,32 @@ export const modifyMm = (args: ModifyMmArgs): string => {
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
 
     switch (command) {
-        // case 'compress':
-        //     let proofStart;
+        case 'compress':
+        case 'decompress':
+            let lastLabelStart: number;
 
-        //     mmParser.on(MmParserEvents.proofStart, (token: MmToken) => {
-        //         proofStart = token;
-        //     });
+            mmParser.on(MmParserEvents.proofLabel, (token: MmToken) => {
+                lastLabelStart = tokenReader.output.length - token.value.length;
+            });
 
-        //     mmParser.on(
-        //         MmParserEvents.newProvableStatement,
-        //         (assertionArgs: AssertionParsedArgs) => {
-        //         },
-        //     );
+            mmParser.on(
+                MmParserEvents.newProvableStatement,
+                (assertionArgs: AssertionParsedArgs) => {
+                    const label = assertionArgs.labeledStatement.Label;
+                    if (
+                        args.all ||
+                        args.proofIds.find(
+                            (wantedLabel) => label === wantedLabel,
+                        ) !== undefined
+                    ) {
+                        const currentProof =
+                            tokenReader.output.slice(lastLabelStart);
+                        console.log(currentProof);
+                    }
+                },
+            );
 
-        //     break;
+            break;
         case 'truncateCount':
             let { count } = args;
 
@@ -90,5 +102,5 @@ export const modifyMm = (args: ModifyMmArgs): string => {
 
     mmParser.parseFromTokenReader(tokenReader);
 
-    return tokenReader.chunks.join('');
+    return tokenReader.output;
 };

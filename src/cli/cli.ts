@@ -41,7 +41,9 @@ export const cli = async () => {
                 await get(unifier, args.proofIds);
                 break;
             }
-            case 'truncate': {
+            case 'truncate':
+            case 'compress':
+            case 'decompress': {
                 info(`modifying ${mmFile}`);
                 const modifyArgs = mapToModifyArgs(args, mmData);
                 const result = modifyMm(modifyArgs);
