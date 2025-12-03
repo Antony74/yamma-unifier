@@ -45,19 +45,19 @@ export type DecompressArgs = CommonArgs & {
 export type TruncateBeforeArgs = CommonArgs & {
     command: 'truncate';
     subCommand: 'before';
-    proofIdOrNumber: string;
+    proofIdOrNum: string;
 };
 
 export type TruncateAfterArgs = CommonArgs & {
     command: 'truncate';
     subCommand: 'after';
-    proofIdOrNumber: string;
+    proofIdOrNum: string;
 };
 
 export type TruncateCountArgs = CommonArgs & {
     command: 'truncate';
     subCommand: 'count';
-    proofIdOrNumber: string;
+    proofIdOrNum: string;
 };
 
 export type Args =
@@ -145,7 +145,7 @@ export const parseArgs = (argv: string[]): Args => {
             },
         )
         .command(
-            ['truncate <mmFile> <proofIdOrNumber>', 't'],
+            ['truncate <mmFile> <proofIdOrNum>', 't'],
             'Truncate .mm file',
             (yargs) => {
                 return yargs
@@ -171,7 +171,7 @@ export const parseArgs = (argv: string[]): Args => {
                         description:
                             'File should be truncated at the given count of proofs',
                     })
-                    .positional('proofIdOrNumber', {
+                    .positional('proofIdOrNum', {
                         description:
                             'Proof to truncate .mm before or after, or total count of proofs desired after truncation',
                         type: 'string',
@@ -234,7 +234,7 @@ export const parseArgs = (argv: string[]): Args => {
                     command: 'truncate',
                     mmFile: parsed.mmFile as string,
                     subCommand: 'before',
-                    proofIdOrNumber: parsed.proofIdOrNumber as string,
+                    proofIdOrNum: parsed.proofIdOrNum as string,
                     singleThread: parsed.singleThread ? true : false,
                 };
             } else if (parsed.after) {
@@ -242,11 +242,11 @@ export const parseArgs = (argv: string[]): Args => {
                     command: 'truncate',
                     mmFile: parsed.mmFile as string,
                     subCommand: 'after',
-                    proofIdOrNumber: parsed.proofIdOrNumber as string,
+                    proofIdOrNum: parsed.proofIdOrNum as string,
                     singleThread: parsed.singleThread ? true : false,
                 };
             } else {
-                const countString = parsed.proofIdOrNumber as string;
+                const countString = parsed.proofIdOrNum as string;
                 const count = Number.parseInt(countString);
 
                 if (isNaN(count)) {
@@ -260,7 +260,7 @@ export const parseArgs = (argv: string[]): Args => {
                     command: 'truncate',
                     mmFile: parsed.mmFile as string,
                     subCommand: 'count',
-                    proofIdOrNumber: countString,
+                    proofIdOrNum: countString,
                     singleThread: parsed.singleThread ? true : false,
                 };
             }

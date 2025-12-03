@@ -39,7 +39,7 @@ export const cli = async () => {
                 const result = modifyMm(
                     modifyArgs.command,
                     mmData,
-                    args.proofIdOrNumber,
+                    args.proofIdOrNum,
                 );
                 info(`writing ${mmFile}`);
                 await fsp.writeFile(mmFile, result);

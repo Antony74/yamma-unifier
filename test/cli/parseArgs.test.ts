@@ -29,16 +29,18 @@ const testConfig: TestItem[] = [
             command: 'unify',
             mmFile: 'examples/example.mm',
             mmpFiles: [],
+            singleThread: false
         } satisfies UnifyArgs,
     },
     {
         name: 'unify one .mmp file',
-        cmd: 'npm start unify examples/example.mm examples/ununified.mmp',
+        cmd: 'npm start unify examples/example.mm examples/ununified.mmp --single-thread',
         outcome: 'return',
         expected: {
             command: 'unify',
             mmFile: 'examples/example.mm',
             mmpFiles: ['examples/ununified.mmp'],
+            singleThread: true
         } satisfies UnifyArgs,
     },
     {
@@ -49,6 +51,7 @@ const testConfig: TestItem[] = [
             command: 'unify',
             mmFile: 'examples/example.mm',
             mmpFiles: ['examples/ununified.mmp', 'examples/unified.mmp'],
+            singleThread: false
         } satisfies UnifyArgs,
     },
     {
@@ -59,7 +62,8 @@ const testConfig: TestItem[] = [
             command: 'get',
             mmFile: 'examples/example.mm',
             proofIds: ['th1'],
-            all: undefined,
+            all: false,
+            singleThread: false
         } satisfies GetArgs,
     },
     {
@@ -71,6 +75,7 @@ const testConfig: TestItem[] = [
             mmFile: 'examples/example.mm',
             proofIds: [],
             all: true,
+            singleThread: false
         } satisfies GetArgs,
     },
     {
@@ -81,7 +86,8 @@ const testConfig: TestItem[] = [
             command: 'compress',
             mmFile: 'examples/example.mm',
             proofIds: ['th1'],
-            all: undefined,
+            all: false,
+            singleThread: false
         } satisfies CompressArgs,
     },
     {
@@ -92,7 +98,8 @@ const testConfig: TestItem[] = [
             command: 'compress',
             mmFile: 'examples/example.mm',
             proofIds: [],
-            all: undefined,
+            all: false,
+            singleThread: false
         } satisfies CompressArgs,
     },
     {
@@ -104,6 +111,7 @@ const testConfig: TestItem[] = [
             mmFile: 'examples/example.mm',
             proofIds: [],
             all: true,
+            singleThread: false
         } satisfies CompressArgs,
     },
     {
@@ -114,7 +122,8 @@ const testConfig: TestItem[] = [
             command: 'decompress',
             mmFile: 'examples/example.mm',
             proofIds: ['th1'],
-            all: undefined,
+            all: false,
+            singleThread: false
         } satisfies DecompressArgs,
     },
     {
@@ -126,6 +135,7 @@ const testConfig: TestItem[] = [
             mmFile: 'examples/example.mm',
             proofIds: [],
             all: true,
+            singleThread: false
         } satisfies DecompressArgs,
     },
     {
@@ -156,8 +166,9 @@ const testConfig: TestItem[] = [
             command: 'truncate',
             mmFile: 'examples/example.mm',
             subCommand: 'before',
-            proofIdOrNumber: 'th1',
-        } satisfies TruncateBeforeArgs,
+            proofIdOrNum: 'th1',
+            singleThread: false
+       } satisfies TruncateBeforeArgs,
     },
     {
         name: 'truncate after',
@@ -167,7 +178,8 @@ const testConfig: TestItem[] = [
             command: 'truncate',
             mmFile: 'examples/example.mm',
             subCommand: 'after',
-            proofIdOrNumber: 'th1',
+            proofIdOrNum: 'th1',
+            singleThread: false
         } satisfies TruncateAfterArgs,
     },
     {
@@ -187,7 +199,8 @@ const testConfig: TestItem[] = [
             command: 'truncate',
             mmFile: 'examples/example.mm',
             subCommand: 'count',
-            proofIdOrNumber: '42',
+            proofIdOrNum: '42',
+            singleThread: false
         } satisfies TruncateCountArgs,
     },
 ];
