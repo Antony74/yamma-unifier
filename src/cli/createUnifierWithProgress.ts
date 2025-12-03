@@ -8,6 +8,7 @@ import { Unifier } from '../api/unifierDefinitions';
 export const createUnifierWithProgress = async (
     mmFilename: string,
     mmData: string,
+    singleThread: boolean,
 ): Promise<Unifier> => {
     const prompt = createPrompt<Unifier, {}>((_config, done): string => {
         const [progress, setProgress] = useState(0);
@@ -21,7 +22,7 @@ export const createUnifierWithProgress = async (
             };
 
             createUnifier(mmData, {
-                mm: { progressCallback },
+                mm: { progressCallback, singleThread },
             }).then((unifier) => {
                 setProofCount(
                     Array.from(

@@ -14,50 +14,48 @@ const truncateSubCommands = ['before', 'after', 'count'] as const;
 export type Command = (typeof commands)[number];
 export type TruncateSubCommand = (typeof truncateSubCommands)[number];
 
-export type UnifyArgs = {
-    command: 'unify';
+export type CommonArgs = {
     mmFile: string;
+    singleThread: boolean;
+};
+
+export type UnifyArgs = CommonArgs & {
+    command: 'unify';
     mmpFiles: string[];
 };
 
-export type GetArgs = {
+export type GetArgs = CommonArgs & {
     command: 'get';
-    mmFile: string;
     proofIds: string[];
     all: boolean | undefined;
 };
 
-export type CompressArgs = {
+export type CompressArgs = CommonArgs & {
     command: 'compress';
-    mmFile: string;
     proofIds: string[];
     all: boolean | undefined;
 };
 
-export type DecompressArgs = {
+export type DecompressArgs = CommonArgs & {
     command: 'decompress';
-    mmFile: string;
     proofIds: string[];
     all: boolean | undefined;
 };
 
-export type TruncateBeforeArgs = {
+export type TruncateBeforeArgs = CommonArgs & {
     command: 'truncate';
-    mmFile: string;
     subCommand: 'before';
     proofIdOrNumber: string;
 };
 
-export type TruncateAfterArgs = {
+export type TruncateAfterArgs = CommonArgs & {
     command: 'truncate';
-    mmFile: string;
     subCommand: 'after';
     proofIdOrNumber: string;
 };
 
-export type TruncateCountArgs = {
+export type TruncateCountArgs = CommonArgs & {
     command: 'truncate';
-    mmFile: string;
     subCommand: 'count';
     proofIdOrNumber: string;
 };
@@ -180,6 +178,7 @@ export const parseArgs = (argv: string[]): Args => {
                     });
             },
         )
+        .option('single-thread', { alias: 's' })
         .middleware((argv) => {
             const fullCommand = commands.find(
                 (command) => argv._[0] === command.charAt(0),
@@ -195,24 +194,27 @@ export const parseArgs = (argv: string[]): Args => {
         case 'get':
             return {
                 command: 'get',
-                mmFile: parsed.mmFile,
-                proofIds: parsed.proofIds,
-                all: parsed.all,
-            } as GetArgs;
+                mmFile: parsed.mmFile as string,
+                proofIds: parsed.proofIds as string[],
+                all: parsed.all ? true: false,
+                singleThread: parsed.singleThread ? true : false,
+            };
         case 'compress':
             return {
                 command: 'compress',
-                mmFile: parsed.mmFile,
-                proofIds: parsed.proofIds,
-                all: parsed.all,
-            } as CompressArgs;
+                mmFile: parsed.mmFile as string,
+                proofIds: parsed.proofIds as string[],
+                all: parsed.all ? true: false,
+                singleThread: parsed.singleThread ? true : false,
+            };
         case 'decompress':
             return {
                 command: 'decompress',
-                mmFile: parsed.mmFile,
-                proofIds: parsed.proofIds,
-                all: parsed.all,
-            } as DecompressArgs;
+                mmFile: parsed.mmFile as string,
+                proofIds: parsed.proofIds as string[],
+                all: parsed.all ? true: false,
+                singleThread: parsed.singleThread ? true : false,
+            };
         case 'truncate':
             const optionCount = [
                 parsed.before,
@@ -230,17 +232,19 @@ export const parseArgs = (argv: string[]): Args => {
             if (parsed.before) {
                 return {
                     command: 'truncate',
-                    mmFile: parsed.mmFile,
+                    mmFile: parsed.mmFile as string,
                     subCommand: 'before',
-                    proofIdOrNumber: parsed.proofIdOrNumber,
-                } as TruncateBeforeArgs;
+                    proofIdOrNumber: parsed.proofIdOrNumber as string,
+                    singleThread: parsed.singleThread ? true : false,
+                };
             } else if (parsed.after) {
                 return {
                     command: 'truncate',
-                    mmFile: parsed.mmFile,
+                    mmFile: parsed.mmFile as string,
                     subCommand: 'after',
-                    proofIdOrNumber: parsed.proofIdOrNumber,
-                } as TruncateAfterArgs;
+                    proofIdOrNumber: parsed.proofIdOrNumber as string,
+                    singleThread: parsed.singleThread ? true : false,
+                };
             } else {
                 const countString = parsed.proofIdOrNumber as string;
                 const count = Number.parseInt(countString);
@@ -254,17 +258,19 @@ export const parseArgs = (argv: string[]): Args => {
 
                 return {
                     command: 'truncate',
-                    mmFile: parsed.mmFile,
+                    mmFile: parsed.mmFile as string,
                     subCommand: 'count',
                     proofIdOrNumber: countString,
-                } as TruncateCountArgs;
+                    singleThread: parsed.singleThread ? true : false,
+                };
             }
         case 'unify':
         default:
             return {
-                command: parsed.command,
-                mmFile: parsed.mmFile,
-                mmpFiles: parsed.mmpFiles,
-            } as UnifyArgs;
+                command: 'unify',
+                mmFile: parsed.mmFile as string,
+                mmpFiles: parsed.mmpFiles as string[],
+                singleThread: parsed.singleThread ? true : false,
+            };
     }
 };

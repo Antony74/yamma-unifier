@@ -42,7 +42,7 @@ export const modifyMm = (
             throw new Error(`${command} is not implemented yet`);
     }
 
-    mmParser.parseFromTokenReader(tokenReader);
+//    mmParser.parseFromTokenReader(tokenReader);
 
     return tokenReader.chunks.join('');
 };

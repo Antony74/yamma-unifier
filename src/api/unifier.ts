@@ -1,4 +1,4 @@
-import { AssertionParsedArgs, MmParser, MmParserEvents } from 'yamma-server/src/mm/MmParser';
+import { MmParser } from 'yamma-server/src/mm/MmParser';
 import { IMmpParserParams, MmpParser } from 'yamma-server/src/mmp/MmpParser';
 import { WorkingVars } from 'yamma-server/src/mmp/WorkingVars';
 import { MmpUnifier } from 'yamma-server/src/mmp/MmpUnifier';
@@ -67,9 +67,16 @@ export const parseMm: ParseMm = async (
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
 
     mmParser.ParseText(mmData);
-    await mmParser.createParseNodesForAssertionsAsync(
-        completeConfig.mm.progressCallback,
-    );
+
+    if (completeConfig.mm.singleThread) {
+        mmParser.createParseNodesForAssertionsSync(
+            completeConfig.mm.progressCallback,
+        );
+    } else {
+        await mmParser.createParseNodesForAssertionsAsync(
+            completeConfig.mm.progressCallback,
+        );
+    }
 
     return mmParser;
 };
