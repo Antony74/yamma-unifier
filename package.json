@@ -8,6 +8,7 @@
     "scripts": {
         "build": "rimraf dist && node build.js",
         "prettier": "prettier --write .",
+        "profile": "node --inspect --prof dist/index.js unify /set.mm/set.mm --single-thread",
         "start": "tsx src/index.ts",
         "test": "vitest",
         "test:coverage": "vitest --coverage",
