@@ -35,11 +35,12 @@ export const defaultConfig: UnifierConfigComplete = {
             LabelsOrderInCompressedProof.mostReferencedFirstAndNiceFormatting,
         diagnosticMessageForSyntaxError: DiagnosticMessageForSyntaxError.short,
         progressCallback: () => {},
-        singleThread: false,
+        singleThread: false
     },
     unifier: {
         maxNumberOfHypothesisDispositionsForStepDerivation: 100000,
         renumber: true,
         removeUnusedStatements: true,
+        getProofStripHeader: true,
     },
 };

@@ -49,7 +49,22 @@ export const createUnifier: CreateUnifier = async (
         },
 
         get: (proofId: string): UnifierResult => {
-            return unifier.unify(`$getproof ${proofId}`);
+            const result = unifier.unify(`$getproof ${proofId}`);
+
+            let mmpParser = parseMmp(result.text, mmParser, completeConfig);
+
+            if (
+                completeConfig.unifier.getProofStripHeader &&
+                mmpParser.diagnostics.length === 1 &&
+                mmpParser.diagnostics[0].code === 'missingComment'
+            ) {
+                result.text = result.text.split('\n').slice(3).join('\n');
+
+                mmpParser = parseMmp(result.text, mmParser, completeConfig);
+            }
+
+            result.mmpUnifier.mmpParser = mmpParser;
+            return result;
         },
 
         mmParser,

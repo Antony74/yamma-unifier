@@ -32,7 +32,10 @@ export type MmConfig = Omit<
     'variableKindsConfiguration' | 'proofMode'
 >;
 
-export type MmpUnifierConfig = Omit<MmpUnifierArgs, 'mmpParser' | 'proofMode'>;
+export type MmpUnifierConfig = Omit<
+    MmpUnifierArgs & { getProofStripHeader: boolean },
+    'mmpParser' | 'proofMode'
+>;
 
 type UnifierConfigCommon = {
     proofMode: ProofMode;

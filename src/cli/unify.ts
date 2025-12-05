@@ -4,14 +4,10 @@ import { getDiagnosticsString, info } from './diagnosticsString';
 import { Unifier, UnifierResult } from '../api/unifierDefinitions';
 
 export const processUnifierResult = async (
-    unifier: Unifier,
     result: UnifierResult,
     mmpFilename: string,
 ) => {
-    const diagnosticsString = getDiagnosticsString(
-        mmpFilename,
-        parseMmp(result.text, unifier.mmParser),
-    );
+    const diagnosticsString = getDiagnosticsString(mmpFilename, result.mmpUnifier.mmpParser);
 
     if (diagnosticsString) {
         console.log();
@@ -34,6 +30,10 @@ export const unify = async (unifier: Unifier, mmpFilenames: string[]) => {
         info(`unifying ${mmpFilename}`);
         const result = unifier.unify(mmpUnunifiedData);
 
-        await processUnifierResult(unifier, result, mmpFilename);
+        // Re-parse the mmp file because we need the diagnostics from after unification rather than before
+        const mmpParser = parseMmp(result.text, unifier.mmParser);
+        result.mmpUnifier.mmpParser = mmpParser;
+
+        await processUnifierResult(result, mmpFilename);
     }
 };
