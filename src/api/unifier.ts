@@ -84,33 +84,37 @@ export const createUnifier: CreateUnifier = async (
             return unifier.unify(result.text);
         },
 
+        deepParse: async () => {
+            if (completeConfig.mm.singleThread) {
+                mmParser.createParseNodesForAssertionsSync(
+                    completeConfig.mm.progressCallback,
+                );
+            } else {
+                await mmParser.createParseNodesForAssertionsAsync(
+                    completeConfig.mm.progressCallback,
+                );
+            }
+        },
+
         mmParser,
     };
+
+    if (completeConfig.mm.deepParse) {
+        await unifier.deepParse();
+    }
 
     return unifier;
 };
 
-export const parseMm: ParseMm = async (
+export const parseMm: ParseMm = (
     mmData: string,
     config?: UnifierConfig,
-): Promise<MmParser> => {
+): MmParser => {
     const completeConfig = applyDefaultsToConfig(config);
 
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
 
     mmParser.ParseText(mmData);
-
-    if (completeConfig.mm.deepParse) {
-        if (completeConfig.mm.singleThread) {
-            mmParser.createParseNodesForAssertionsSync(
-                completeConfig.mm.progressCallback,
-            );
-        } else {
-            await mmParser.createParseNodesForAssertionsAsync(
-                completeConfig.mm.progressCallback,
-            );
-        }
-    }
 
     return mmParser;
 };

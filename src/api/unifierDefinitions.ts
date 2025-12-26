@@ -15,6 +15,7 @@ export type UnifierResult = {
 export type Unifier = {
     unify: (mmpData: string | MmpParser) => UnifierResult;
     get: (proofId: string) => UnifierResult;
+    deepParse: () => Promise<void>;
     mmParser: MmParser;
 };
 
@@ -63,7 +64,7 @@ export type CreateUnifier = (
 export type ParseMm = (
     mmData: string,
     config?: UnifierConfig,
-) => Promise<MmParser>;
+) => MmParser;
 
 export type ParseMmp = (
     mmpData: string,
