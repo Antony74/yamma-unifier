@@ -10,21 +10,14 @@ export const createUnifierWithProgress = async (
     singleThread: boolean,
     deepParse: boolean,
 ): Promise<Unifier> => {
-    const setProgress = (progress: number, proofCount?: number) => {
-        const proofCountString =
-            proofCount === undefined
-                ? ''
-                : `(${proofCount} ${proofCount === 1 ? 'proof' : 'proofs'})`;
-
+    const setProgress = (progress: number) => {
         process.stdout.write(
             '\r' +
                 color.gray(
-                    `parsing ${mmFilename}... ${Math.round(progress * 100)}% ${proofCountString}`,
+                    `deep parsing ${mmFilename}... ${Math.round(progress * 100)}%`,
                 ),
         );
     };
-
-    setProgress(0);
 
     const progressCallback: ProgressCallback = (message) => {
         if (message.kind === 'progress') {
@@ -32,8 +25,10 @@ export const createUnifierWithProgress = async (
         }
     };
 
+    console.log(color.gray(`parsing ${mmFilename}`));
+
     const unifier = await createUnifier(mmData, {
-        mm: { progressCallback, singleThread, deepParse },
+        mm: { progressCallback, singleThread, deepParse: false },
     });
 
     const proofCount = Array.from(
@@ -42,7 +37,16 @@ export const createUnifierWithProgress = async (
         return labeledStatement instanceof ProvableStatement;
     }).length;
 
-    setProgress(1, proofCount);
-    console.log();
+    console.log(
+        color.gray(`${proofCount} ${proofCount === 1 ? 'proof' : 'proofs'}`),
+    );
+
+    if (deepParse) {
+        setProgress(0);
+        await unifier.deepParse();
+        setProgress(1);
+        console.log();
+    }
+
     return unifier;
 };
