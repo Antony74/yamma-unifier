@@ -42,6 +42,10 @@ export class TokenReaderWithIndex extends TokenReader {
 
         return this.index;
     }
+
+    get lastTokenLength(): number {
+        return this.lastToken?.value.length ?? 0;
+    }
 }
 
 export const logToken = (token: MmToken | undefined) => {

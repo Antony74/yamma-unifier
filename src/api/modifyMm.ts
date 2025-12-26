@@ -60,12 +60,16 @@ export const modifyMm = (args: ModifyMmArgs): string => {
 
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
 
+    const chunks: string[] = [];
+    let start = 0;
+    let end = mmData.length;
+
     switch (command) {
         case 'compress':
         case 'decompress':
             let lastLabelStart: number;
 
-            mmParser.on(MmParserEvents.newLabel, (token: MmToken) => {
+            mmParser.on(MmParserEvents.newLabel, () => {
                 lastLabelStart = tokenReader.lastIndex;
             });
 
@@ -79,12 +83,9 @@ export const modifyMm = (args: ModifyMmArgs): string => {
                             (wantedLabel) => label === wantedLabel,
                         ) !== undefined
                     ) {
-                        const lastTokenLength =
-                            tokenReader.lastToken?.value.length ?? 0;
-
                         const currentProof = mmData.substring(
                             lastLabelStart,
-                            tokenReader.lastIndex + lastTokenLength,
+                            tokenReader.lastIndex + tokenReader.lastTokenLength,
                         );
 
                         console.log(`"${currentProof}"`);
@@ -94,14 +95,14 @@ export const modifyMm = (args: ModifyMmArgs): string => {
 
             break;
         case 'truncateCount':
-            // let { count } = args;
+            let { count } = args;
 
-            // mmParser.on(MmParserEvents.newProvableStatement, () => {
-            //     --count;
-            //     if (count === 0) {
-            //         tokenReader.setWriting(false);
-            //     }
-            // });
+            mmParser.on(MmParserEvents.newProvableStatement, () => {
+                --count;
+                if (count === 0) {
+                    end = tokenReader.lastIndex + tokenReader.lastTokenLength;
+                }
+            });
             break;
         default:
             throw new Error(`${command} is not implemented yet`);
@@ -109,5 +110,7 @@ export const modifyMm = (args: ModifyMmArgs): string => {
 
     mmParser.parseFromTokenReader(tokenReader);
 
-    return mmData;
+    chunks.push(mmData.substring(start, end));
+
+    return Buffer.concat(chunks.map(Buffer.from)).toString();
 };
