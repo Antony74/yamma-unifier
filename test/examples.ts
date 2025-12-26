@@ -47,7 +47,7 @@ export const exampleFiles = {
         'h2::test.1          |- P',
         'qed:2,1:mp         |- Q',
         '',
-        '$=    wp wq test.1 test.2 mp $.',
+        '$= ( mp ) ABDCE $.',
         '',
         '',
     ].join('\n'),
