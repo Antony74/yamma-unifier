@@ -35,6 +35,7 @@ export const cli = async () => {
                     mmFile,
                     mmData,
                     args.singleThread,
+                    true,
                 );
                 await unify(unifier, args.mmpFiles);
                 break;
@@ -44,6 +45,7 @@ export const cli = async () => {
                     mmFile,
                     mmData,
                     args.singleThread,
+                    false,
                 );
                 await get(unifier, args.proofIds);
                 break;

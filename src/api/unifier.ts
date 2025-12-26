@@ -54,7 +54,10 @@ export const createUnifier: CreateUnifier = async (
 
             let mmpParser = result.mmpUnifier.mmpParser;
 
-            if (result.text.includes(text) && mmpParser.diagnostics.length === 0) {
+            if (
+                result.text.includes(text) &&
+                mmpParser.diagnostics.length === 0
+            ) {
                 mmpParser.diagnostics.push({
                     severity: 1,
                     range: {
@@ -97,14 +100,16 @@ export const parseMm: ParseMm = async (
 
     mmParser.ParseText(mmData);
 
-    if (completeConfig.mm.singleThread) {
-        mmParser.createParseNodesForAssertionsSync(
-            completeConfig.mm.progressCallback,
-        );
-    } else {
-        await mmParser.createParseNodesForAssertionsAsync(
-            completeConfig.mm.progressCallback,
-        );
+    if (completeConfig.mm.deepParse) {
+        if (completeConfig.mm.singleThread) {
+            mmParser.createParseNodesForAssertionsSync(
+                completeConfig.mm.progressCallback,
+            );
+        } else {
+            await mmParser.createParseNodesForAssertionsAsync(
+                completeConfig.mm.progressCallback,
+            );
+        }
     }
 
     return mmParser;

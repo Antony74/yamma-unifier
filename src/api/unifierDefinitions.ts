@@ -28,6 +28,7 @@ export type MmConfig = Omit<
     IExtensionSettings & {
         progressCallback: ProgressCallback;
         singleThread: boolean;
+        deepParse: boolean;
     },
     'variableKindsConfiguration' | 'proofMode'
 >;

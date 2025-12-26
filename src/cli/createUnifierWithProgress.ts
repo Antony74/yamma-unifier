@@ -8,6 +8,7 @@ export const createUnifierWithProgress = async (
     mmFilename: string,
     mmData: string,
     singleThread: boolean,
+    deepParse: boolean,
 ): Promise<Unifier> => {
     const setProgress = (progress: number, proofCount?: number) => {
         const proofCountString =
@@ -32,7 +33,7 @@ export const createUnifierWithProgress = async (
     };
 
     const unifier = await createUnifier(mmData, {
-        mm: { progressCallback, singleThread },
+        mm: { progressCallback, singleThread, deepParse },
     });
 
     const proofCount = Array.from(
