@@ -7,7 +7,9 @@ export const processUnifierResult = async (
     result: UnifierResult,
     mmpFilename: string,
 ) => {
-    const diagnosticsString = getDiagnosticsString(mmpFilename, result.mmpUnifier.mmpParser);
+    const mmpParser = result.mmpUnifier.mmpParser;
+
+    const diagnosticsString = getDiagnosticsString(mmpFilename, mmpParser);
 
     if (diagnosticsString) {
         console.log();
@@ -15,8 +17,12 @@ export const processUnifierResult = async (
         console.log();
     }
 
-    info(`writing ${mmpFilename}`);
-    await fsp.writeFile(mmpFilename, result.text);
+    const errors = mmpParser.diagnostics.filter((item) => item.severity === 1);
+
+    if (errors.length === 0) {
+        info(`writing ${mmpFilename}`);
+        await fsp.writeFile(mmpFilename, result.text);
+    }
 };
 
 export const unify = async (unifier: Unifier, mmpFilenames: string[]) => {

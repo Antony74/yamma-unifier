@@ -49,9 +49,24 @@ export const createUnifier: CreateUnifier = async (
         },
 
         get: (proofId: string): UnifierResult => {
-            const result = unifier.unify(`$getproof ${proofId}`);
+            const text = `$getproof ${proofId}`;
+            const result = unifier.unify(text);
 
-            let mmpParser = parseMmp(result.text, mmParser, completeConfig);
+            let mmpParser = result.mmpUnifier.mmpParser;
+
+            if (result.text.includes(text) && mmpParser.diagnostics.length === 0) {
+                mmpParser.diagnostics.push({
+                    severity: 1,
+                    range: {
+                        start: { line: 0, character: 0 },
+                        end: { line: 0, character: text.length },
+                    },
+                    message: `${proofId} not found`,
+                });
+                return result;
+            }
+
+            mmpParser = parseMmp(result.text, mmParser, completeConfig);
 
             if (
                 completeConfig.unifier.getProofStripHeader &&
@@ -63,8 +78,7 @@ export const createUnifier: CreateUnifier = async (
                 mmpParser = parseMmp(result.text, mmParser, completeConfig);
             }
 
-            result.mmpUnifier.mmpParser = mmpParser;
-            return result;
+            return unifier.unify(result.text);
         },
 
         mmParser,
