@@ -7,9 +7,9 @@ import {
 } from 'yamma-server/src/mm/MmParser';
 
 import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
-import { tokenize } from './tokenize';
-import { ModifyingTokenReader } from './modifyingTokenReader';
+import { TokenReaderWithIndex } from './modifyingTokenReader';
 import { MmToken } from 'yamma-server/src/grammar/MmLexer';
+import { TokensCreator } from 'yamma-server/src/mm/TokensCreator';
 
 export type ModifyMmCommonArgs = {
     mmData: string;
@@ -54,8 +54,9 @@ export const modifyMm = (args: ModifyMmArgs): string => {
     const { command, config, mmData } = args;
     const completeConfig = applyDefaultsToConfig(config);
 
-    const mmTokens = tokenize(mmData);
-    const tokenReader = new ModifyingTokenReader(mmTokens);
+    const tokensCreator = new TokensCreator();
+    const mmTokens = tokensCreator.createTokensFromText(mmData);
+    const tokenReader = new TokenReaderWithIndex(mmData, mmTokens);
 
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
 
@@ -65,7 +66,7 @@ export const modifyMm = (args: ModifyMmArgs): string => {
             let lastLabelStart: number;
 
             mmParser.on(MmParserEvents.newLabel, (token: MmToken) => {
-                lastLabelStart = tokenReader.output.length - token.value.length;
+                lastLabelStart = tokenReader.lastIndex;
             });
 
             mmParser.on(
@@ -78,23 +79,29 @@ export const modifyMm = (args: ModifyMmArgs): string => {
                             (wantedLabel) => label === wantedLabel,
                         ) !== undefined
                     ) {
-                        const currentProof =
-                            tokenReader.output.slice(lastLabelStart);
-                        console.log(currentProof);
+                        const lastTokenLength =
+                            tokenReader.lastToken?.value.length ?? 0;
+
+                        const currentProof = mmData.substring(
+                            lastLabelStart,
+                            tokenReader.lastIndex + lastTokenLength,
+                        );
+
+                        console.log(`"${currentProof}"`);
                     }
                 },
             );
 
             break;
         case 'truncateCount':
-            let { count } = args;
+            // let { count } = args;
 
-            mmParser.on(MmParserEvents.newProvableStatement, () => {
-                --count;
-                if (count === 0) {
-                    tokenReader.setWriting(false);
-                }
-            });
+            // mmParser.on(MmParserEvents.newProvableStatement, () => {
+            //     --count;
+            //     if (count === 0) {
+            //         tokenReader.setWriting(false);
+            //     }
+            // });
             break;
         default:
             throw new Error(`${command} is not implemented yet`);
@@ -102,5 +109,5 @@ export const modifyMm = (args: ModifyMmArgs): string => {
 
     mmParser.parseFromTokenReader(tokenReader);
 
-    return tokenReader.output;
+    return mmData;
 };
