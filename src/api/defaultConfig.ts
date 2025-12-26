@@ -8,7 +8,7 @@ import { UnifierConfigComplete } from './unifierDefinitions';
 
 export const defaultConfig: UnifierConfigComplete = {
     common: {
-        proofMode: ProofMode.normal,
+        proofMode: ProofMode.compressed,
         variableKindsConfig: [
             {
                 kind: 'wff',

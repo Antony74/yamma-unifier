@@ -9,9 +9,16 @@ import { unify } from './unify';
 import { get } from './get';
 import { modifyMm } from '../api/modifyMm';
 import { mapToModifyArgs } from './mapToModifyArgs';
+import { getHeapLimitMB, getUsedHeapMB } from './heapStatistics';
 
 export const cli = async () => {
     const startTime = performance.now();
+
+    let peakMem = getUsedHeapMB();
+
+    const interval = setInterval(() => {
+        peakMem = Math.max(peakMem, getUsedHeapMB());
+    }, 50);
 
     const args = parseArgs(process.argv);
     const { mmFile, command } = args;
@@ -55,8 +62,11 @@ export const cli = async () => {
                 throw new Error(`${command} is not implemented yet`);
         }
 
+        const memInfo = `peak mem ${peakMem}MB of ${getHeapLimitMB()}MB`;
+
+        interval.close();
         const endTime = performance.now();
-        info(`done (${prettyms(endTime - startTime)})`);
+        info(`done (${prettyms(endTime - startTime)}, ${memInfo})`);
     } catch (e) {
         if (e instanceof Error) {
             console.error(e.message);
