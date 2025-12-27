@@ -5,7 +5,7 @@ import {
     IExtensionSettings,
 } from 'yamma-server/src/mm/ConfigurationManager';
 
-import { UnifierConfig, UnifierConfigComplete } from './unifierDefinitions';
+import { UnifierConfig, UnifierConfigComplete } from '../unifierDefinitions';
 import { defaultConfig } from './defaultConfig';
 
 export const applyDefaultsToConfig = (

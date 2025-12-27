@@ -6,8 +6,8 @@ import {
     MmParserEvents,
 } from 'yamma-server/src/mm/MmParser';
 
-import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
-import { TokenReaderWithIndex } from './modifyingTokenReader';
+import { applyDefaultsToConfig, mapConfigToGlobalState } from './common/config';
+import { TokenReaderWithIndex } from './common/modifyingTokenReader';
 import { MmToken } from 'yamma-server/src/grammar/MmLexer';
 import { TokensCreator } from 'yamma-server/src/mm/TokensCreator';
 
