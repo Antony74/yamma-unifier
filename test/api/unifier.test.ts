@@ -4,14 +4,15 @@ import { exampleFiles } from '../examples';
 
 describe(`yamma-unifier`, () => {
     it(`can unify`, async () => {
-        const unifier = await createUnifier(exampleFiles['example.mm']);
+        const unifier = createUnifier(exampleFiles['example.mm']);
+        await unifier.deepParse();
         const result = unifier.unify(exampleFiles['ununified.mmp']);
         expect(result.text).toEqual(exampleFiles['unified.mmp']);
     });
 
     it(`throws an error given bad mmData`, async () => {
         await expect(
-            async () => await createUnifier(exampleFiles['bad1.mm']),
+            async () => createUnifier(exampleFiles['bad1.mm']),
         ).rejects.toEqual(new Error('A comment was never closed'));
     });
 });

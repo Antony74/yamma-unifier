@@ -36,7 +36,6 @@ export const defaultConfig: UnifierConfigComplete = {
         diagnosticMessageForSyntaxError: DiagnosticMessageForSyntaxError.short,
         progressCallback: () => {},
         singleThread: false,
-        deepParse: true,
     },
     unifier: {
         maxNumberOfHypothesisDispositionsForStepDerivation: 100000,

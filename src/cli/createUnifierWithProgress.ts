@@ -28,7 +28,7 @@ export const createUnifierWithProgress = async (
     console.log(color.gray(`parsing ${mmFilename}`));
 
     const unifier = await createUnifier(mmData, {
-        mm: { progressCallback, singleThread, deepParse: false },
+        mm: { progressCallback, singleThread },
     });
 
     const proofCount = Array.from(

@@ -14,15 +14,15 @@ import {
     UnifierResult,
 } from './unifierDefinitions';
 
-export const createUnifier: CreateUnifier = async (
+export const createUnifier: CreateUnifier = (
     mmData: string | MmParser,
     config?: UnifierConfig,
-): Promise<Unifier> => {
+): Unifier => {
     const completeConfig = applyDefaultsToConfig(config);
 
     const mmParser: MmParser =
         typeof mmData === 'string'
-            ? await parseMm(mmData, completeConfig)
+            ? parseMm(mmData, completeConfig)
             : mmData;
 
     const unifier: Unifier = {
@@ -98,10 +98,6 @@ export const createUnifier: CreateUnifier = async (
 
         mmParser,
     };
-
-    if (completeConfig.mm.deepParse) {
-        await unifier.deepParse();
-    }
 
     return unifier;
 };

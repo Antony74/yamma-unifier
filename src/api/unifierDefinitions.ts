@@ -29,7 +29,6 @@ export type MmConfig = Omit<
     IExtensionSettings & {
         progressCallback: ProgressCallback;
         singleThread: boolean;
-        deepParse: boolean;
     },
     'variableKindsConfiguration' | 'proofMode'
 >;
@@ -59,7 +58,7 @@ export type UnifierConfig = {
 export type CreateUnifier = (
     mmData: string | MmParser,
     config?: UnifierConfig,
-) => Promise<Unifier>;
+) => Unifier;
 
 export type ParseMm = (
     mmData: string,
