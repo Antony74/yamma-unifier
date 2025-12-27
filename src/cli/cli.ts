@@ -7,8 +7,8 @@ import { parseArgs } from './parseArgs';
 import { info } from './diagnosticsString';
 import { unify } from './unify';
 import { get } from './get';
-import { modifyMm } from '../api/modifyMm';
-import { mapToModifyArgs } from './mapToModifyArgs';
+import { modifyProofMode } from '../api/modifyProofMode';
+import { truncateCount } from '../api/truncateCount';
 import { getHeapLimitMB, getUsedHeapMB } from './heapStatistics';
 
 export const cli = async () => {
@@ -51,11 +51,31 @@ export const cli = async () => {
                 break;
             }
             case 'truncate':
+                info(`modifying ${mmFile}`);
+                switch (args.subCommand) {
+                    case 'count':
+                        const result = truncateCount(
+                            mmData,
+                            parseInt(args.proofIdOrCount),
+                        );
+                        info(`writing ${mmFile}`);
+                        await fsp.writeFile(mmFile, result);
+                        break;
+                    default:
+                        throw new Error(
+                            `${args.subCommand} is not implemented yet`,
+                        );
+                }
+                break;
             case 'compress':
             case 'decompress': {
                 info(`modifying ${mmFile}`);
-                const modifyArgs = mapToModifyArgs(args, mmData);
-                const result = modifyMm(modifyArgs);
+                const result = modifyProofMode(
+                    command,
+                    mmData,
+                    args.proofIds,
+                    args.all,
+                );
                 info(`writing ${mmFile}`);
                 await fsp.writeFile(mmFile, result);
                 break;
