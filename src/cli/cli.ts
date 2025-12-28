@@ -7,18 +7,12 @@ import { parseArgs } from './parseArgs';
 import { info } from './diagnosticsString';
 import { unify } from './unify';
 import { get } from './get';
-import { compressOrDecompressProof } from '../api/compressOrDecompressProof';
+import { compressOrDecompressProofs } from '../api/compressOrDecompressProofs';
 import { truncateCount } from '../api/truncateCount';
-import { getHeapLimitMB, getUsedHeapMB } from './heapStatistics';
+import { getHeapLimitMB, getPeakMB, pollMemory } from './heapStatistics';
 
 export const cli = async () => {
     const startTime = performance.now();
-
-    let peakMem = getUsedHeapMB();
-
-    const interval = setInterval(() => {
-        peakMem = Math.max(peakMem, getUsedHeapMB());
-    }, 50);
 
     const args = parseArgs(process.argv);
     const { mmFile, command } = args;
@@ -70,7 +64,7 @@ export const cli = async () => {
             case 'compress':
             case 'decompress': {
                 info(`modifying ${mmFile}`);
-                const result = compressOrDecompressProof(
+                const result = compressOrDecompressProofs(
                     command,
                     mmData,
                     args.proofIds,
@@ -84,9 +78,9 @@ export const cli = async () => {
                 throw new Error(`${command} is not implemented yet`);
         }
 
-        const memInfo = `peak mem ${peakMem}MB of ${getHeapLimitMB()}MB`;
+        pollMemory();
+        const memInfo = `peak mem ${getPeakMB()}MB of ${getHeapLimitMB()}MB`;
 
-        interval.close();
         const endTime = performance.now();
         info(`done (${prettyms(endTime - startTime)}, ${memInfo})`);
     } catch (e) {

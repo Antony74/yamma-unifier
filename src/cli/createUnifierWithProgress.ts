@@ -3,6 +3,7 @@ import { ProgressCallback } from 'yamma-server/src/parseNodesCreatorThread/Parse
 import { ProvableStatement } from 'yamma-server/src/mm/ProvableStatement';
 import { createUnifier } from '../api/unifier';
 import { Unifier } from '../api/unifierDefinitions';
+import { pollMemory } from './heapStatistics';
 
 export const createUnifierWithProgress = async (
     mmFilename: string,
@@ -17,6 +18,7 @@ export const createUnifierWithProgress = async (
                     `deep parsing ${mmFilename}... ${Math.round(progress * 100)}%`,
                 ),
         );
+        pollMemory();
     };
 
     const progressCallback: ProgressCallback = (message) => {

@@ -3,6 +3,7 @@ import { TokensCreator } from "yamma-server/src/mm/TokensCreator";
 import { UnifierConfig } from "../unifierDefinitions";
 import { applyDefaultsToConfig, mapConfigToGlobalState } from "./config";
 import { TokenReaderWithIndex } from "./modifyingTokenReader";
+import { monitorMmParser } from "../../cli/heapStatistics";
 
 export const getParserAndTokenReader = (
     config: UnifierConfig | undefined,
@@ -15,6 +16,7 @@ export const getParserAndTokenReader = (
     const tokenReader = new TokenReaderWithIndex(mmData, mmTokens);
 
     const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
+    monitorMmParser(mmParser);
 
     return { tokenReader, mmParser };
 };
