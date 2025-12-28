@@ -7,7 +7,7 @@ import { parseArgs } from './parseArgs';
 import { info } from './diagnosticsString';
 import { unify } from './unify';
 import { get } from './get';
-import { modifyProofMode } from '../api/modifyProofMode';
+import { compressOrDecompressProof } from '../api/compressOrDecompressProof';
 import { truncateCount } from '../api/truncateCount';
 import { getHeapLimitMB, getUsedHeapMB } from './heapStatistics';
 
@@ -70,7 +70,7 @@ export const cli = async () => {
             case 'compress':
             case 'decompress': {
                 info(`modifying ${mmFile}`);
-                const result = modifyProofMode(
+                const result = compressOrDecompressProof(
                     command,
                     mmData,
                     args.proofIds,

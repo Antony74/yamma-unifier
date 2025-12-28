@@ -10,7 +10,7 @@ import { applyDefaultsToConfig } from './common/config';
 import { ProofMode } from 'yamma-server/src/mm/ConfigurationManager';
 import { createUnifier } from './unifier';
 
-export const modifyProofMode = (
+export const compressOrDecompressProof = (
     command: 'compress' | 'decompress',
     mmData: string,
     proofIds: string[],
