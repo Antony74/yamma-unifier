@@ -11,6 +11,7 @@ import { compressOrDecompressProofs } from '../api/compressOrDecompressProofs';
 import { truncateCount } from '../api/truncateCount';
 import { getHeapLimitMB, getPeakMB, pollMemory } from './heapStatistics';
 import { truncateAfter } from '../api/truncateAfter';
+import { truncateBefore } from '../api/truncateBefore';
 
 export const cli = async () => {
     const startTime = performance.now();
@@ -48,11 +49,11 @@ export const cli = async () => {
             case 'truncate':
                 info(`modifying ${mmFile}`);
                 switch (args.subCommand) {
-                    case 'count':
+                    case 'before':
                         {
-                            const result = truncateCount(
+                            const result = truncateBefore(
                                 mmData,
-                                parseInt(args.proofIdOrCount),
+                                args.proofIdOrCount,
                             );
                             info(`writing ${mmFile}`);
                             await fsp.writeFile(mmFile, result);
@@ -68,10 +69,16 @@ export const cli = async () => {
                             await fsp.writeFile(mmFile, result);
                         }
                         break;
-                    default:
-                        throw new Error(
-                            `${args.subCommand} is not implemented`,
-                        );
+                    case 'count':
+                        {
+                            const result = truncateCount(
+                                mmData,
+                                parseInt(args.proofIdOrCount),
+                            );
+                            info(`writing ${mmFile}`);
+                            await fsp.writeFile(mmFile, result);
+                        }
+                        break;
                 }
                 break;
             case 'compress':
