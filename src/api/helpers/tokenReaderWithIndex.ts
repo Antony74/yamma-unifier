@@ -86,6 +86,8 @@ export class TokenReaderWithIndex extends TokenReader {
             lines.push('  '.repeat(index) + '$}');
         }
 
+        lines.push('');
+
         return lines.join('\n');
     }
 }
