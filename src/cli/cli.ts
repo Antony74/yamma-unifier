@@ -10,6 +10,7 @@ import { get } from './get';
 import { compressOrDecompressProofs } from '../api/compressOrDecompressProofs';
 import { truncateCount } from '../api/truncateCount';
 import { getHeapLimitMB, getPeakMB, pollMemory } from './heapStatistics';
+import { truncateAfter } from '../api/truncateAfter';
 
 export const cli = async () => {
     const startTime = performance.now();
@@ -48,16 +49,28 @@ export const cli = async () => {
                 info(`modifying ${mmFile}`);
                 switch (args.subCommand) {
                     case 'count':
-                        const result = truncateCount(
-                            mmData,
-                            parseInt(args.proofIdOrCount),
-                        );
-                        info(`writing ${mmFile}`);
-                        await fsp.writeFile(mmFile, result);
+                        {
+                            const result = truncateCount(
+                                mmData,
+                                parseInt(args.proofIdOrCount),
+                            );
+                            info(`writing ${mmFile}`);
+                            await fsp.writeFile(mmFile, result);
+                        }
+                        break;
+                    case 'after':
+                        {
+                            const result = truncateAfter(
+                                mmData,
+                                args.proofIdOrCount,
+                            );
+                            info(`writing ${mmFile}`);
+                            await fsp.writeFile(mmFile, result);
+                        }
                         break;
                     default:
                         throw new Error(
-                            `${args.subCommand} is not implemented yet`,
+                            `${args.subCommand} is not implemented`,
                         );
                 }
                 break;
@@ -75,7 +88,7 @@ export const cli = async () => {
                 break;
             }
             default:
-                throw new Error(`${command} is not implemented yet`);
+                throw new Error(`${command} is not implemented`);
         }
 
         pollMemory();
