@@ -32,10 +32,23 @@ export const getChunksForCompressOrDecompressProofs = (
             const mmpStatements = mmpProof.mmpStatements;
 
             const proofStatement = `${label} $p ${textForFormula}`;
-            const proofContent =
-                mmpStatements[mmpStatements.length - 1].toText();
+            let proofContent = mmpStatements[mmpStatements.length - 1]
+                .toText()
+                .trim();
+
+            const indent = start - mmData.lastIndexOf('\n', start) + 1;
+
+            if (proofContent.startsWith('$= ')) {
+                proofContent = '$=\n' + proofContent.slice(3).trim();
+            }
+
+            proofContent = proofContent
+                .split('\n')
+                .map((s) => s.trim())
+                .join('\n' + ' '.repeat(indent));
 
             chunks.push(proofStatement);
+            chunks.push(' ');
             chunks.push(proofContent);
         } else {
             chunks.push(mmData.substring(start, end));
