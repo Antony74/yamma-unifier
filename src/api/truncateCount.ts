@@ -1,5 +1,5 @@
 import { MmParserEvents } from 'yamma-server/src/mm/MmParser';
-import { getParserAndTokenReader } from './common/getParserAndTokenReader';
+import { getParserAndTokenReader } from './helpers/getParserAndTokenReader';
 import { UnifierConfig } from './unifierDefinitions';
 
 export const truncateCount = (

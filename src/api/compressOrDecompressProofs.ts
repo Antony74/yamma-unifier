@@ -1,10 +1,10 @@
 import { UnifierConfig } from './unifierDefinitions';
-import { getParserAndTokenReader } from './common/getParserAndTokenReader';
-import { applyDefaultsToConfig } from './common/config';
+import { getParserAndTokenReader } from './helpers/getParserAndTokenReader';
+import { applyDefaultsToConfig } from './helpers/config';
 import { ProofMode } from 'yamma-server/src/mm/ConfigurationManager';
 import { createUnifier } from './unifier';
-import { getChunksForCompressOrDecompressProofs } from './common/getChunksForCompressOrDecompressProofs';
-import { parseForCompressOrDecompressProofs } from './common/parseForCompressOrDecompressProofs';
+import { getChunksForCompressOrDecompressProofs } from './helpers/getChunksForCompressOrDecompressProofs';
+import { parseForCompressOrDecompressProofs } from './helpers/parseForCompressOrDecompressProofs';
 
 export const compressOrDecompressProofs = (
     command: 'compress' | 'decompress',

@@ -3,7 +3,7 @@ import { IMmpParserParams, MmpParser } from 'yamma-server/src/mmp/MmpParser';
 import { WorkingVars } from 'yamma-server/src/mmp/WorkingVars';
 import { MmpUnifier } from 'yamma-server/src/mmp/MmpUnifier';
 
-import { applyDefaultsToConfig, mapConfigToGlobalState } from './common/config';
+import { applyDefaultsToConfig, mapConfigToGlobalState } from './helpers/config';
 
 import {
     CreateUnifier,

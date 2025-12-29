@@ -6,7 +6,7 @@ import {
 } from 'yamma-server/src/mm/ConfigurationManager';
 
 import { UnifierConfig, UnifierConfigComplete } from '../unifierDefinitions';
-import { defaultConfig } from './defaultConfig';
+import { defaultConfig } from '../defaultConfig';
 
 export const applyDefaultsToConfig = (
     config?: UnifierConfig,

@@ -4,7 +4,7 @@ import DiagnosticMessageForSyntaxError, {
     LabelsOrderInCompressedProof,
 } from 'yamma-server/src/mm/ConfigurationManager';
 
-import { UnifierConfigComplete } from '../unifierDefinitions';
+import { UnifierConfigComplete } from './unifierDefinitions';
 
 export const defaultConfig: UnifierConfigComplete = {
     common: {
