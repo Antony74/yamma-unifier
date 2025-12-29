@@ -12,6 +12,7 @@ import { truncateCount } from '../api/truncateCount';
 import { getHeapLimitMB, getPeakMB, pollMemory } from './heapStatistics';
 import { truncateAfter } from '../api/truncateAfter';
 import { truncateBefore } from '../api/truncateBefore';
+import { ProvableStatement } from 'yamma-server/src/mm/ProvableStatement';
 
 export const cli = async () => {
     const startTime = performance.now();
@@ -43,6 +44,18 @@ export const cli = async () => {
                     args.singleThread,
                     false,
                 );
+
+                if (args.all) {
+                    args.proofIds = Array.from(
+                        unifier.mmParser.labelToStatementMap.entries(),
+                    )
+                        .filter(
+                            ([_label, statement]) =>
+                                statement instanceof ProvableStatement,
+                        )
+                        .map(([label]) => label);
+                }
+
                 await get(unifier, args.proofIds);
                 break;
             }
