@@ -34,5 +34,5 @@ export const compressOrDecompressProofs = (
 
     const chunks = getChunksForCompressOrDecompressProofs(mmData, proofsToReplace, unifier);
 
-    return Buffer.concat(chunks.map(Buffer.from)).toString();
+    return chunks.join('');
 };
