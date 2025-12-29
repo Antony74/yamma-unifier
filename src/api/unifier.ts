@@ -3,7 +3,10 @@ import { IMmpParserParams, MmpParser } from 'yamma-server/src/mmp/MmpParser';
 import { WorkingVars } from 'yamma-server/src/mmp/WorkingVars';
 import { MmpUnifier } from 'yamma-server/src/mmp/MmpUnifier';
 
-import { applyDefaultsToConfig, mapConfigToGlobalState } from './helpers/config';
+import {
+    applyDefaultsToConfig,
+    mapConfigToGlobalState,
+} from './helpers/config';
 
 import {
     CreateUnifier,
@@ -22,9 +25,7 @@ export const createUnifier: CreateUnifier = (
     const completeConfig = applyDefaultsToConfig(config);
 
     const mmParser: MmParser =
-        typeof mmData === 'string'
-            ? parseMm(mmData, completeConfig)
-            : mmData;
+        typeof mmData === 'string' ? parseMm(mmData, completeConfig) : mmData;
 
     const unifier: Unifier = {
         unify: (mmpData: string | MmpParser): UnifierResult => {

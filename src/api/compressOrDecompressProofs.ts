@@ -32,7 +32,11 @@ export const compressOrDecompressProofs = (
 
     const unifier = createUnifier(mmParser, completeConfig);
 
-    const chunks = getChunksForCompressOrDecompressProofs(mmData, proofsToReplace, unifier);
+    const chunks = getChunksForCompressOrDecompressProofs(
+        mmData,
+        proofsToReplace,
+        unifier,
+    );
 
     return chunks.join('');
 };

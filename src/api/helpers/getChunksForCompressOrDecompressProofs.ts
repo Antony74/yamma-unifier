@@ -1,5 +1,5 @@
-import { Unifier } from "../unifierDefinitions";
-import { ProofToReplace } from "./parseForCompressOrDecompressProofs";
+import { Unifier } from '../unifierDefinitions';
+import { ProofToReplace } from './parseForCompressOrDecompressProofs';
 
 export const getChunksForCompressOrDecompressProofs = (
     mmData: string,

@@ -1,5 +1,10 @@
-import { MmParser, MmParserEvents, AssertionParsedArgs } from "yamma-server/src/mm/MmParser";
-import { TokenReaderWithIndex } from "./modifyingTokenReader";
+import {
+    MmParser,
+    MmParserEvents,
+    AssertionParsedArgs,
+} from 'yamma-server/src/mm/MmParser';
+
+import { TokenReaderWithIndex } from './tokenReaderWithIndex';
 
 export type ProofToReplace = { label: string; start: number; end: number };
 

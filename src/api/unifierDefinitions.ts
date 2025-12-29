@@ -60,10 +60,7 @@ export type CreateUnifier = (
     config?: UnifierConfig,
 ) => Unifier;
 
-export type ParseMm = (
-    mmData: string,
-    config?: UnifierConfig,
-) => MmParser;
+export type ParseMm = (mmData: string, config?: UnifierConfig) => MmParser;
 
 export type ParseMmp = (
     mmpData: string,

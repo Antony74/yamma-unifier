@@ -1,9 +1,9 @@
-import { MmParser } from "yamma-server/src/mm/MmParser";
-import { TokensCreator } from "yamma-server/src/mm/TokensCreator";
-import { UnifierConfig } from "../unifierDefinitions";
-import { applyDefaultsToConfig, mapConfigToGlobalState } from "./config";
-import { TokenReaderWithIndex } from "./modifyingTokenReader";
-import { monitorMmParser } from "../../cli/heapStatistics";
+import { MmParser } from 'yamma-server/src/mm/MmParser';
+import { TokensCreator } from 'yamma-server/src/mm/TokensCreator';
+import { UnifierConfig } from '../unifierDefinitions';
+import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
+import { TokenReaderWithIndex } from './tokenReaderWithIndex';
+import { monitorMmParser } from '../../cli/heapStatistics';
 
 export const getParserAndTokenReader = (
     config: UnifierConfig | undefined,
