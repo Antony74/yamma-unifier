@@ -27,29 +27,25 @@ export const getChunksForCompressOrDecompressProofs = (
 
         const mmpProof = result.mmpUnifier.uProof;
         const textForFormula = mmpProof?.lastMmpProofStep?.textForFormula;
+        let proofStatement = mmpProof?.proofStatement?.toText().trim();
 
-        if (mmpProof && mmpProof.isProofComplete && textForFormula) {
-            const mmpStatements = mmpProof.mmpStatements;
-
-            const proofStatement = `${label} $p ${textForFormula}`;
-            let proofContent = mmpStatements[mmpStatements.length - 1]
-                .toText()
-                .trim();
+        if (mmpProof && mmpProof.isProofComplete && textForFormula && proofStatement) {
+            const proofDefinition = `${label} $p ${textForFormula}`;
 
             const indent = start - mmData.lastIndexOf('\n', start) + 1;
 
-            if (proofContent.startsWith('$= ')) {
-                proofContent = '$=\n' + proofContent.slice(3).trim();
+            if (proofStatement.startsWith('$= ')) {
+                proofStatement = '$=\n' + proofStatement.slice(3).trim();
             }
 
-            proofContent = proofContent
+            proofStatement = proofStatement
                 .split('\n')
                 .map((s) => s.trim())
                 .join('\n' + ' '.repeat(indent));
 
-            chunks.push(proofStatement);
+            chunks.push(proofDefinition);
             chunks.push(' ');
-            chunks.push(proofContent);
+            chunks.push(proofStatement);
         } else {
             chunks.push(mmData.substring(start, end));
         }
