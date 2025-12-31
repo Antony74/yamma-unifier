@@ -1,7 +1,9 @@
+import * as color from 'picocolors';
 import { Unifier } from '../unifierDefinitions';
 import { ProofToReplace } from './parseForCompressOrDecompressProofs';
 
 export const getChunksForCompressOrDecompressProofs = (
+    command: 'compress' | 'decompress',
     mmData: string,
     proofsToReplace: ProofToReplace[],
     unifier: Unifier,
@@ -30,6 +32,8 @@ export const getChunksForCompressOrDecompressProofs = (
         let proofStatement = mmpProof?.proofStatement?.toText().trim();
 
         if (mmpProof && mmpProof.isProofComplete && textForFormula && proofStatement) {
+            console.log(color.gray(`${command}ing ${label}`));
+
             const proofDefinition = `${label} $p ${textForFormula}`;
 
             const indent = start - mmData.lastIndexOf('\n', start) + 1;

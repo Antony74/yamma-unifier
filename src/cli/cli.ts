@@ -60,7 +60,7 @@ export const cli = async () => {
                 break;
             }
             case 'truncate':
-                info(`modifying ${mmFile}`);
+                info(`parsing ${mmFile}`);
                 switch (args.subCommand) {
                     case 'before':
                         {
@@ -96,7 +96,7 @@ export const cli = async () => {
                 break;
             case 'compress':
             case 'decompress': {
-                info(`modifying ${mmFile}`);
+                info(`parsing ${mmFile}`);
                 const result = compressOrDecompressProofs(
                     command,
                     mmData,
