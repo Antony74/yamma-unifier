@@ -7,6 +7,7 @@
     },
     "scripts": {
         "build": "rimraf dist && node build.js",
+        "postinstall": "git submodule update && cd yamma && npm install",
         "prettier": "prettier --write .",
         "profile": "npm run build && tsx profile.ts",
         "start": "tsx src/index.ts",
