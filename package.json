@@ -1,5 +1,5 @@
 {
-    "name": "yamma-unifier",
+    "name": "yamma-hl-api",
     "version": "1.0.0",
     "main": "dist/index.js",
     "bin": {
@@ -9,7 +9,6 @@
         "build": "rimraf dist && node build.js",
         "postinstall": "git submodule update && cd yamma && npm install",
         "prettier": "prettier --write .",
-        "profile": "npm run build && tsx profile.ts",
         "start": "tsx src/index.ts",
         "test": "vitest",
         "test:coverage": "vitest --coverage",
@@ -27,11 +26,6 @@
     },
     "homepage": "https://github.com/Antony74/yamma-unifier#readme",
     "description": "API and CLI for Yamma's unifier.  Yamma's a Metamath Assistant",
-    "dependencies": {
-        "picocolors": "^1.1.1",
-        "pretty-ms": "^9.3.0",
-        "yargs": "^18.0.0"
-    },
     "devDependencies": {
         "@types/nearley": "^2.11.5",
         "@types/node": "^24.10.1",
