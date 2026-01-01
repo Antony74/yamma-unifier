@@ -1,12 +1,7 @@
-#!/usr/bin/env node
-
-// e.g. npm start examples/example.mm examples/ununified.mmp
-// e.g. yammau examples/example.mm examples/ununified.mmp
-
-import { cli } from './cli/cli';
+export * from './api/compressOrDecompressProofs';
+export * from './api/defaultConfig';
+export * from './api/truncateAfter';
+export * from './api/truncateBefore';
+export * from './api/truncateCount';
 export * from './api/unifier';
-import { isMainThread } from 'worker_threads';
-
-if (require.main === module && isMainThread) {
-    cli();
-}
+export * from './api/unifierDefinitions';
