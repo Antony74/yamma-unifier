@@ -23,6 +23,6 @@ export const pollMemory = () => {
 
 export const getPeakMB = () => peakMem;
 
-export const monitorMmParser = (mmParser: MmParser) => {
-    mmParser.on(MmParserEvents.newLabel, pollMemory);
-};
+// export const monitorMmParser = (mmParser: MmParser) => {
+//     mmParser.on(MmParserEvents.newLabel, pollMemory);
+// };

@@ -5,6 +5,7 @@ import DiagnosticMessageForSyntaxError, {
 } from 'yamma-server/src/mm/ConfigurationManager';
 
 import { UnifierConfigComplete } from './unifierDefinitions';
+import { MmParser } from 'yamma-server/src/mm/MmParser';
 
 export const defaultConfig: UnifierConfigComplete = {
     common: {
@@ -36,6 +37,7 @@ export const defaultConfig: UnifierConfigComplete = {
         diagnosticMessageForSyntaxError: DiagnosticMessageForSyntaxError.short,
         progressCallback: () => {},
         singleThread: false,
+        createMmParser: (...params) => new MmParser(...params),
     },
     unifier: {
         maxNumberOfHypothesisDispositionsForStepDerivation: 100000,

@@ -29,6 +29,9 @@ export type MmConfig = Omit<
     IExtensionSettings & {
         progressCallback: ProgressCallback;
         singleThread: boolean;
+        createMmParser: (
+            ...params: ConstructorParameters<typeof MmParser>
+        ) => MmParser;
     },
     'variableKindsConfiguration' | 'proofMode'
 >;

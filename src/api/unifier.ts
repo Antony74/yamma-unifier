@@ -16,7 +16,6 @@ import {
     UnifierConfig,
     UnifierResult,
 } from './unifierDefinitions';
-import { monitorMmParser } from '../cli/heapStatistics';
 
 export const createUnifier: CreateUnifier = (
     mmData: string | MmParser,
@@ -110,8 +109,8 @@ export const parseMm: ParseMm = (
 ): MmParser => {
     const completeConfig = applyDefaultsToConfig(config);
 
-    const mmParser = new MmParser(mapConfigToGlobalState(completeConfig));
-    monitorMmParser(mmParser);
+    const { createMmParser } = completeConfig.mm;
+    const mmParser = createMmParser(mapConfigToGlobalState(completeConfig));
 
     mmParser.ParseText(mmData);
 
