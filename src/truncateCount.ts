@@ -1,4 +1,4 @@
-import { MmParserEvents } from 'yamma-server/src/mm/MmParser';
+import { MmParserEvents } from '../yamma/server/src/mm/MmParser';
 import { getParserAndTokenReader } from './helpers/getParserAndTokenReader';
 import { UnifierConfig } from './unifierDefinitions';
 
