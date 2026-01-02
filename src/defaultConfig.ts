@@ -2,10 +2,10 @@ import DiagnosticMessageForSyntaxError, {
     DisjVarAutomaticGeneration,
     ProofMode,
     LabelsOrderInCompressedProof,
-} from 'yamma-server/src/mm/ConfigurationManager';
+} from '../yamma/server/src/mm/ConfigurationManager';
 
 import { UnifierConfigComplete } from './unifierDefinitions';
-import { MmParser } from 'yamma-server/src/mm/MmParser';
+import { MmParser } from '../yamma/server/src/mm/MmParser';
 
 export const defaultConfig: UnifierConfigComplete = {
     common: {

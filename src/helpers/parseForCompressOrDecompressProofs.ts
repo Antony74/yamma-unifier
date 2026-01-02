@@ -2,7 +2,7 @@ import {
     MmParser,
     MmParserEvents,
     AssertionParsedArgs,
-} from 'yamma-server/src/mm/MmParser';
+} from '../../yamma/server/src/mm/MmParser';
 
 import { TokenReaderWithIndex } from './tokenReaderWithIndex';
 

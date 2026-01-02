@@ -1,5 +1,5 @@
-import { MmToken } from 'yamma-server/src/grammar/MmLexer';
-import { TokenReader } from 'yamma-server/src/mm/TokenReader';
+import { MmToken } from '../../yamma/server/src/grammar/MmLexer';
+import { TokenReader } from '../../yamma/server/src/mm/TokenReader';
 
 export class TokenReaderWithIndex extends TokenReader {
     lastToken: MmToken | undefined;

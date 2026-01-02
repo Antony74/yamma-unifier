@@ -1,5 +1,5 @@
-import { MmParser } from 'yamma-server/src/mm/MmParser';
-import { TokensCreator } from 'yamma-server/src/mm/TokensCreator';
+import { MmParser } from '../../yamma/server/src/mm/MmParser';
+import { TokensCreator } from '../../yamma/server/src/mm/TokensCreator';
 import { UnifierConfig } from '../unifierDefinitions';
 import { applyDefaultsToConfig, mapConfigToGlobalState } from './config';
 import { TokenReaderWithIndex } from './tokenReaderWithIndex';

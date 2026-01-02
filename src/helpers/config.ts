@@ -1,9 +1,9 @@
-import { GlobalState } from 'yamma-server/src/general/GlobalState';
+import { GlobalState } from '../../yamma/server/src/general/GlobalState';
 
 import {
     IVariableKindConfiguration,
     IExtensionSettings,
-} from 'yamma-server/src/mm/ConfigurationManager';
+} from '../../yamma/server/src/mm/ConfigurationManager';
 
 import { UnifierConfig, UnifierConfigComplete } from '../unifierDefinitions';
 import { defaultConfig } from '../defaultConfig';

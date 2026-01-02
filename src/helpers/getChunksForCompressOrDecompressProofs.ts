@@ -31,7 +31,12 @@ export const getChunksForCompressOrDecompressProofs = (
         const textForFormula = mmpProof?.lastMmpProofStep?.textForFormula;
         let proofStatement = mmpProof?.proofStatement?.toText().trim();
 
-        if (mmpProof && mmpProof.isProofComplete && textForFormula && proofStatement) {
+        if (
+            mmpProof &&
+            mmpProof.isProofComplete &&
+            textForFormula &&
+            proofStatement
+        ) {
             console.log(color.gray(`${command}ing ${label}`));
 
             const proofDefinition = `${label} $p ${textForFormula}`;
