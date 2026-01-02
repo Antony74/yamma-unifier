@@ -34,14 +34,14 @@
         "rimraf": "^6.1.2",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3",
-        "vitest": "^4.0.14",
-        "yamma-server": "file:./yamma/server"
+        "vitest": "^4.0.14"
     },
     "prettier": {
         "tabWidth": 4,
         "singleQuote": true
     },
     "type": "commonjs",
+    "types": "dist/types",
     "engines": {
         "node": ">=22.18.0"
     }
