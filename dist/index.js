@@ -7743,16 +7743,85 @@ var require_picocolors = __commonJS({
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  MmParser: () => MmParser,
+  MmParserErrorCode: () => MmParserErrorCode,
+  MmParserEvents: () => MmParserEvents,
+  MmParserWarningCode: () => MmParserWarningCode,
+  MmpParser: () => MmpParser,
+  MmpParserErrorCode: () => MmpParserErrorCode2,
+  MmpParserWarningCode: () => MmpParserWarningCode2,
+  ProvableStatement: () => ProvableStatement,
+  addParseNodes: () => addParseNodes,
   compressOrDecompressProofs: () => compressOrDecompressProofs,
+  createLabelToFormulaMap: () => createLabelToFormulaMap,
+  createLabelToParseNodeForThreadMap: () => createLabelToParseNodeForThreadMap,
+  createMessageDone: () => createMessageDone,
+  createMessageLog: () => createMessageLog,
+  createMessageProgress: () => createMessageProgress,
+  createParseNodeForThread: () => createParseNodeForThread,
+  createParseNodesInANewThread: () => createParseNodesInANewThread,
+  createParseNodesInCurrentThread: () => createParseNodesInCurrentThread,
   createUnifier: () => createUnifier,
   defaultConfig: () => defaultConfig,
+  defaultProgressCallback: () => defaultProgressCallback,
   parseMm: () => parseMm,
   parseMmp: () => parseMmp,
+  postMessage: () => postMessage,
   truncateAfter: () => truncateAfter,
   truncateBefore: () => truncateBefore,
   truncateCount: () => truncateCount
 });
 module.exports = __toCommonJS(index_exports);
+
+// yamma/server/src/mm/MmParser.ts
+var fs3 = __toESM(require("fs"));
+var readline = __toESM(require("readline"));
+
+// yamma/server/src/mm/DisjointVarMap.ts
+var DisjointVarMap = class {
+  constructor() {
+    this.map = /* @__PURE__ */ new Map();
+  }
+  /**Adds the two vars (in the right order) to the map */
+  add(var1, var2) {
+    if (var1 == var2)
+      throw new Error("This method should be invoked with distinct vars");
+    else {
+      const orderedVar1 = var1 < var2 ? var1 : var2;
+      const orderedVar2 = var1 < var2 ? var2 : var1;
+      let varsDisjointFromOrderedVar1 = this.map.get(orderedVar1);
+      if (varsDisjointFromOrderedVar1 == void 0) {
+        varsDisjointFromOrderedVar1 = /* @__PURE__ */ new Set();
+        this.map.set(orderedVar1, varsDisjointFromOrderedVar1);
+      }
+      varsDisjointFromOrderedVar1.add(orderedVar2);
+    }
+  }
+  containsDjContraint(var1, var2) {
+    const orderedVar1 = var1 < var2 ? var1 : var2;
+    const orderedVar2 = var1 < var2 ? var2 : var1;
+    const varsDisjointFromOrderedVar1 = this.map.get(orderedVar1);
+    const result = varsDisjointFromOrderedVar1 != void 0 && varsDisjointFromOrderedVar1.has(orderedVar2);
+    return result;
+  }
+  /**
+  * Disjoint Vars are sorted lexicographically (each constraint is returned as an array with two elements)
+  */
+  get sortedDisjVarPairs() {
+    const pairs = [];
+    const sortedVar1 = Array.from(this.map.keys()).sort();
+    for (const var1 of sortedVar1) {
+      const setOfVarsDisjointFromVar1 = this.map.get(var1);
+      if (setOfVarsDisjointFromVar1) {
+        const sortedVars2 = Array.from(setOfVarsDisjointFromVar1).sort();
+        for (const var2 of sortedVars2) {
+          pairs.push([var1, var2]);
+        }
+      }
+    }
+    return pairs;
+  }
+};
 
 // yamma/server/src/mm/Utils.ts
 var import_vscode_languageserver = __toESM(require_main4());
@@ -8053,181 +8122,6 @@ function notifyProgress(current, total, message) {
   if (previousPercentageOfWorkDone < percentageOfWorkDone)
     consoleLogWithTimestamp(completeMessage + "%");
 }
-
-// yamma/server/src/mm/TokensCreator.ts
-var fs = __toESM(require("fs"));
-var path = __toESM(require("path"));
-var TokensCreator = class _TokensCreator {
-  constructor() {
-    this.isInAComment = false;
-    this.imported_files = /* @__PURE__ */ new Set();
-  }
-  addTokensFromIncludedFile(includedFileName, tokens, includingFileFullPath) {
-    if (!this.imported_files.has(includedFileName) && includingFileFullPath) {
-      const parsedPath = { ...path.parse(includingFileFullPath), base: includedFileName };
-      const includedFileFullPath = path.format(parsedPath);
-      const tokensCreator = new _TokensCreator();
-      tokensCreator.addTokensFromFile(includedFileFullPath, tokens);
-      this.imported_files.add(includedFileName);
-    }
-  }
-  createTokensFromLine(line, lineNumber, tokens, fileFullPath) {
-    const lineTokens = splitToTokensDefaultInLine(line, lineNumber);
-    let i = 0;
-    while (i < lineTokens.length) {
-      if (!this.isInAComment && lineTokens[i].value === "$[" && lineTokens[i + 2].value === "$]") {
-        this.addTokensFromIncludedFile(lineTokens[i + 1].value, tokens, fileFullPath);
-        i += 3;
-      } else {
-        if (lineTokens[i].value === "$(" || lineTokens[i].value === "$)")
-          this.isInAComment = !this.isInAComment;
-        lineTokens[i].filePath = fileFullPath;
-        tokens.push(lineTokens[i]);
-        i++;
-      }
-    }
-  }
-  addTokensFromLines(lines, tokens, fileFullPath) {
-    for (let i = 0; i < lines.length; i++) {
-      this.createTokensFromLine(lines[i], i, tokens, fileFullPath);
-    }
-    return tokens;
-  }
-  addTokensFromText(text, tokens, fileFullPath) {
-    this.isInAComment = false;
-    const lines = text.split("\n");
-    this.addTokensFromLines(lines, tokens, fileFullPath);
-    return tokens;
-  }
-  createTokensFromText(text, fileFullPath) {
-    this.isInAComment = false;
-    const lines = text.split("\n");
-    const tokens = this.addTokensFromLines(lines, [], fileFullPath);
-    return tokens;
-  }
-  addTokensFromFile(fileFullPath, tokens) {
-    this.isInAComment = false;
-    const text = fs.readFileSync(fileFullPath, "utf-8");
-    this.addTokensFromText(text, tokens, fileFullPath);
-    return tokens;
-  }
-  createTokensFromFile(fileFullPath) {
-    this.isInAComment = false;
-    this.imported_files.add(fileFullPath);
-    const text = fs.readFileSync(fileFullPath, "utf-8");
-    const tokens = this.createTokensFromText(text, fileFullPath);
-    return tokens;
-  }
-};
-
-// yamma/server/src/mmp/FormulaToParseNodeCache.ts
-var FormulaToParseNodeCache = class {
-  /** cache for formula recently parsed. It really speeds up the MmpParser, because
-   * it allows avoiding most of the parsing time (an .mmp file, often doesn't
-   * change much from an edit to the other)
-   */
-  constructor() {
-    this.formulaToInternalNodeMap = /* @__PURE__ */ new Map();
-  }
-  add(formula, internalNode) {
-    this.formulaToInternalNodeMap.set(formula, internalNode);
-  }
-  invalidate(stepFormulaString) {
-    this.formulaToInternalNodeMap.delete(stepFormulaString);
-  }
-};
-
-// yamma/server/src/general/GlobalState.ts
-var GlobalState = class {
-  constructor() {
-    /** true iff the extension is loading a theory; used to avoid multiple loading
-     * triggered by different events
-     */
-    this.loadingATheory = false;
-    /** true iff a unify() has been performed, but the cursor has not been updated yet*/
-    this._isCursorPositionUpdateRequired = false;
-    this.isTriggerSuggestRequired = false;
-  }
-  get isCursorPositionUpdateRequired() {
-    const result = this._isCursorPositionUpdateRequired;
-    this._isCursorPositionUpdateRequired = false;
-    return result;
-  }
-  requireCursorPositionUpdate() {
-    this._isCursorPositionUpdateRequired = true;
-  }
-  setSuggestedRangeForCursorPosition(range2) {
-    this.suggestedRangeForCursorPosition = range2;
-  }
-  requireTriggerSuggest() {
-    this.isTriggerSuggestRequired = true;
-  }
-  resetTriggerSuggest() {
-    this.isTriggerSuggestRequired = false;
-  }
-  /** cache for formula recently parsed. It really speeds up the MmpParser, because
-   * it allows avoiding most of the parsing time (an .mmp file, often doesn't
-   * change much from an edit to the other)
-   */
-  get formulaToParseNodeCache() {
-    if (this._formulaToParseNodeCache == void 0)
-      this._formulaToParseNodeCache = new FormulaToParseNodeCache();
-    return this._formulaToParseNodeCache;
-  }
-};
-
-// yamma/server/src/mm/TheoryLoader.ts
-var import_vscode_languageserver6 = __toESM(require_main4());
-
-// yamma/server/src/mm/MmParser.ts
-var fs3 = __toESM(require("fs"));
-var readline = __toESM(require("readline"));
-
-// yamma/server/src/mm/DisjointVarMap.ts
-var DisjointVarMap = class {
-  constructor() {
-    this.map = /* @__PURE__ */ new Map();
-  }
-  /**Adds the two vars (in the right order) to the map */
-  add(var1, var2) {
-    if (var1 == var2)
-      throw new Error("This method should be invoked with distinct vars");
-    else {
-      const orderedVar1 = var1 < var2 ? var1 : var2;
-      const orderedVar2 = var1 < var2 ? var2 : var1;
-      let varsDisjointFromOrderedVar1 = this.map.get(orderedVar1);
-      if (varsDisjointFromOrderedVar1 == void 0) {
-        varsDisjointFromOrderedVar1 = /* @__PURE__ */ new Set();
-        this.map.set(orderedVar1, varsDisjointFromOrderedVar1);
-      }
-      varsDisjointFromOrderedVar1.add(orderedVar2);
-    }
-  }
-  containsDjContraint(var1, var2) {
-    const orderedVar1 = var1 < var2 ? var1 : var2;
-    const orderedVar2 = var1 < var2 ? var2 : var1;
-    const varsDisjointFromOrderedVar1 = this.map.get(orderedVar1);
-    const result = varsDisjointFromOrderedVar1 != void 0 && varsDisjointFromOrderedVar1.has(orderedVar2);
-    return result;
-  }
-  /**
-  * Disjoint Vars are sorted lexicographically (each constraint is returned as an array with two elements)
-  */
-  get sortedDisjVarPairs() {
-    const pairs = [];
-    const sortedVar1 = Array.from(this.map.keys()).sort();
-    for (const var1 of sortedVar1) {
-      const setOfVarsDisjointFromVar1 = this.map.get(var1);
-      if (setOfVarsDisjointFromVar1) {
-        const sortedVars2 = Array.from(setOfVarsDisjointFromVar1).sort();
-        for (const var2 of sortedVars2) {
-          pairs.push([var1, var2]);
-        }
-      }
-    }
-    return pairs;
-  }
-};
 
 // yamma/server/src/mm/Statements.ts
 var Statement = class {
@@ -10202,6 +10096,13 @@ function createGrammar(mmpRulesForThread, workingVars) {
   grammar.lexer = new MmLexer(workingVars);
   return grammar;
 }
+function createParseNodeForThread(formula, grammar, workingVars) {
+  let parseNodeForThread;
+  const parseResult = LabeledStatement.parseString(formula, grammar, workingVars);
+  if (parseResult.parseNode != void 0)
+    parseNodeForThread = ParseNodeForThreadConverter.convertParseNode(parseResult.parseNode);
+  return parseNodeForThread;
+}
 function getParseNodeForThread(formula, grammar, workingVars, formulaToParseNodeForThreadCache) {
   let parseNodeForThread = formulaToParseNodeForThreadCache.get(formula);
   if (parseNodeForThread == void 0) {
@@ -10283,7 +10184,7 @@ function createParseNodesInCurrentThread(mmParser, progressCallback) {
 var import_stream2 = require("stream");
 
 // yamma/server/src/mm/TokenReader.ts
-var fs2 = __toESM(require("fs"));
+var fs = __toESM(require("fs"));
 var TokenReader = class {
   constructor(tokens) {
     this.indexForNextToken = 0;
@@ -10312,7 +10213,7 @@ var TokenReader = class {
       const endBracket = this.Read();
       if (endBracket?.value != "$]")
         throw new Error("Inclusion command not terminated");
-      fs2.realpath(localFileName?.value, (error, fullPathFileName) => {
+      fs.realpath(localFileName?.value, (error, fullPathFileName) => {
         if (error) {
           throw new Error("Included file not found!");
         } else {
@@ -10372,7 +10273,97 @@ var TokenReader = class {
   }
 };
 
+// yamma/server/src/mm/TokensCreator.ts
+var fs2 = __toESM(require("fs"));
+var path = __toESM(require("path"));
+var TokensCreator = class _TokensCreator {
+  constructor() {
+    this.isInAComment = false;
+    this.imported_files = /* @__PURE__ */ new Set();
+  }
+  addTokensFromIncludedFile(includedFileName, tokens, includingFileFullPath) {
+    if (!this.imported_files.has(includedFileName) && includingFileFullPath) {
+      const parsedPath = { ...path.parse(includingFileFullPath), base: includedFileName };
+      const includedFileFullPath = path.format(parsedPath);
+      const tokensCreator = new _TokensCreator();
+      tokensCreator.addTokensFromFile(includedFileFullPath, tokens);
+      this.imported_files.add(includedFileName);
+    }
+  }
+  createTokensFromLine(line, lineNumber, tokens, fileFullPath) {
+    const lineTokens = splitToTokensDefaultInLine(line, lineNumber);
+    let i = 0;
+    while (i < lineTokens.length) {
+      if (!this.isInAComment && lineTokens[i].value === "$[" && lineTokens[i + 2].value === "$]") {
+        this.addTokensFromIncludedFile(lineTokens[i + 1].value, tokens, fileFullPath);
+        i += 3;
+      } else {
+        if (lineTokens[i].value === "$(" || lineTokens[i].value === "$)")
+          this.isInAComment = !this.isInAComment;
+        lineTokens[i].filePath = fileFullPath;
+        tokens.push(lineTokens[i]);
+        i++;
+      }
+    }
+  }
+  addTokensFromLines(lines, tokens, fileFullPath) {
+    for (let i = 0; i < lines.length; i++) {
+      this.createTokensFromLine(lines[i], i, tokens, fileFullPath);
+    }
+    return tokens;
+  }
+  addTokensFromText(text, tokens, fileFullPath) {
+    this.isInAComment = false;
+    const lines = text.split("\n");
+    this.addTokensFromLines(lines, tokens, fileFullPath);
+    return tokens;
+  }
+  createTokensFromText(text, fileFullPath) {
+    this.isInAComment = false;
+    const lines = text.split("\n");
+    const tokens = this.addTokensFromLines(lines, [], fileFullPath);
+    return tokens;
+  }
+  addTokensFromFile(fileFullPath, tokens) {
+    this.isInAComment = false;
+    const text = fs2.readFileSync(fileFullPath, "utf-8");
+    this.addTokensFromText(text, tokens, fileFullPath);
+    return tokens;
+  }
+  createTokensFromFile(fileFullPath) {
+    this.isInAComment = false;
+    this.imported_files.add(fileFullPath);
+    const text = fs2.readFileSync(fileFullPath, "utf-8");
+    const tokens = this.createTokensFromText(text, fileFullPath);
+    return tokens;
+  }
+};
+
 // yamma/server/src/mm/MmParser.ts
+var MmParserErrorCode = /* @__PURE__ */ ((MmParserErrorCode2) => {
+  MmParserErrorCode2["varNotInActiveFStatement"] = "varNotInActiveFStatement";
+  MmParserErrorCode2["stackHasMoreThanOneItemAtEndOfProof"] = "stackHasMoreThanOneItemAtEndOfProof";
+  MmParserErrorCode2["stackUnderflow"] = "stackUnderflow";
+  MmParserErrorCode2["assertionProvenDoesntMatch"] = "assertionProvenDoesntMatch";
+  MmParserErrorCode2["eHypDoesntMatchTheStackEntry"] = "eHypDoesntMatchTheStackEntry";
+  MmParserErrorCode2["missingDjVarsStatement"] = "missingDjVarsStatement";
+  MmParserErrorCode2["missingCloseParenthesisInPStatement"] = "missingCloseParenthesisInPStatement";
+  MmParserErrorCode2["notALabelOfAssertionOrOptionalHyp"] = "notALabelOfAssertionOrOptionalHyp";
+  MmParserErrorCode2["labelOfAProvableStatementWithFailedVerification"] = "labelOfAProvableStatementWithFailedVerification";
+  MmParserErrorCode2["formulaNonParsable"] = "FormulaNonParsable";
+  return MmParserErrorCode2;
+})(MmParserErrorCode || {});
+var MmParserWarningCode = /* @__PURE__ */ ((MmParserWarningCode2) => {
+  MmParserWarningCode2["unprovenStatement"] = "unprovenStatement";
+  return MmParserWarningCode2;
+})(MmParserWarningCode || {});
+var MmParserEvents = /* @__PURE__ */ ((MmParserEvents2) => {
+  MmParserEvents2["newAxiomStatement"] = "newAxiomStatement";
+  MmParserEvents2["newProvableStatement"] = "newProvableStatement";
+  MmParserEvents2["parsingProgress"] = "newParsingProgress";
+  MmParserEvents2["newLabel"] = "newLabel";
+  return MmParserEvents2;
+})(MmParserEvents || {});
 var MmParser = class extends import_stream2.EventEmitter {
   constructor(globalState, progressToken) {
     super();
@@ -10735,215 +10726,6 @@ var MmParser = class extends import_stream2.EventEmitter {
   }
 };
 
-// yamma/server/src/stepSuggestion/ModelLoader.ts
-var import_vscode_languageserver4 = __toESM(require_main4());
-
-// yamma/server/src/stepSuggestion/ModelBuilder.ts
-var import_nearley4 = __toESM(require_nearley());
-
-// yamma/server/src/mm/DiagnosticEventHandler.ts
-var import_vscode_languageserver5 = __toESM(require_main4());
-var url = __toESM(require("url"));
-var DiagnosticEventHandler = class _DiagnosticEventHandler {
-  constructor(sink) {
-    // arrow function binds `this` automatically
-    this.formulaNonParsableEventHandler = (eventArgs) => {
-      const labeledStatement = eventArgs.labeledStatement;
-      const content = labeledStatement.Content;
-      const formula = labeledStatement.formula;
-      const symbolThatTriggeredParsingError = eventArgs.parseResult.parser.current;
-      let range2 = oneCharacterRange(content[formula.length - 1].range.end);
-      if (symbolThatTriggeredParsingError < formula.length)
-        range2 = content[symbolThatTriggeredParsingError].range;
-      const mmDiagnostic = {
-        severity: import_vscode_languageserver5.DiagnosticSeverity.Error,
-        message: `Formula in statement "${eventArgs.labeledStatement.Label}" is not parsable ` + eventArgs.parseResult.error?.message,
-        range: range2,
-        code: "FormulaNonParsable" /* formulaNonParsable */,
-        provableStatementLabel: eventArgs.labeledStatement.Label,
-        source: "yamma",
-        mmFilePath: eventArgs.labeledStatement.labelToken.filePath
-      };
-      const publishDiagnosticsParams = {
-        uri: url.pathToFileURL(eventArgs.labeledStatement.labelToken.filePath).href,
-        diagnostics: [mmDiagnostic]
-      };
-      this.sink.sendDiagnostics(publishDiagnosticsParams);
-    };
-    this.sink = sink;
-  }
-  static {
-    this._instance = null;
-  }
-  static getInstance(sink) {
-    if (!_DiagnosticEventHandler._instance) {
-      if (!sink) {
-        throw new Error("DiagnosticEventHandler not initialized: provide a sink on first call.");
-      }
-      _DiagnosticEventHandler._instance = new _DiagnosticEventHandler(sink);
-    }
-    return _DiagnosticEventHandler._instance;
-  }
-};
-
-// yamma/server/src/mm/TheoryLoader.ts
-var path2 = require("path");
-var url2 = require("url");
-
-// yamma/server/src/mm/ConfigurationManager.ts
-var DiagnosticMessageForSyntaxError = /* @__PURE__ */ ((DiagnosticMessageForSyntaxError2) => {
-  DiagnosticMessageForSyntaxError2["short"] = "short";
-  DiagnosticMessageForSyntaxError2["verbose"] = "verbose";
-  return DiagnosticMessageForSyntaxError2;
-})(DiagnosticMessageForSyntaxError || {});
-var ConfigurationManager_default = DiagnosticMessageForSyntaxError;
-
-// src/defaultConfig.ts
-var defaultConfig = {
-  common: {
-    proofMode: "compressed" /* compressed */,
-    variableKindsConfig: [
-      {
-        kind: "wff",
-        workingVarPrefix: "W",
-        lspSemantictokenType: "variable"
-      },
-      {
-        kind: "setvar",
-        workingVarPrefix: "S",
-        lspSemantictokenType: "string"
-      },
-      {
-        kind: "class",
-        workingVarPrefix: "C",
-        lspSemantictokenType: "keyword"
-      }
-    ]
-  },
-  mm: {
-    maxNumberOfProblems: 100,
-    mmFileFullPath: "",
-    disjVarAutomaticGeneration: "GenerateNone" /* GenerateNone */,
-    labelsOrderInCompressedProof: "mostReferencedFirstAndNiceFormatting" /* mostReferencedFirstAndNiceFormatting */,
-    diagnosticMessageForSyntaxError: ConfigurationManager_default.short,
-    progressCallback: () => {
-    },
-    singleThread: false,
-    createMmParser: (...params) => new MmParser(...params)
-  },
-  unifier: {
-    maxNumberOfHypothesisDispositionsForStepDerivation: 1e5,
-    renumber: true,
-    removeUnusedStatements: true,
-    getProofStripHeader: true
-  }
-};
-
-// src/helpers/config.ts
-var applyDefaultsToConfig = (config) => {
-  return config ? {
-    common: { ...defaultConfig.common, ...config.common },
-    mm: { ...defaultConfig.mm, ...config.mm },
-    unifier: { ...defaultConfig.unifier, ...config.unifier }
-  } : defaultConfig;
-};
-var mapConfigToGlobalState = (config) => {
-  const variableKindsConfiguration = new Map(
-    config.common.variableKindsConfig.map((kindConfig) => [
-      kindConfig.kind,
-      kindConfig
-    ])
-  );
-  const lastFetchedSettings = {
-    ...config.mm,
-    proofMode: config.common.proofMode,
-    variableKindsConfiguration
-  };
-  const globalState = new GlobalState();
-  globalState.lastFetchedSettings = lastFetchedSettings;
-  return globalState;
-};
-
-// src/helpers/tokenReaderWithIndex.ts
-var TokenReaderWithIndex = class extends TokenReader {
-  constructor(mmData, tokens) {
-    super(tokens);
-    this.mmData = mmData;
-    this.index = 0;
-    this.line = 0;
-    this.column = 0;
-    this.inComment = false;
-    this.scopeDepth = 0;
-  }
-  Read() {
-    this.lastToken = super.Read();
-    if (!!this.lastToken) {
-      const value = this.lastToken.value;
-      if (this.inComment) {
-        if (value === "$)") {
-          this.inComment = false;
-        } else if (value.includes("$(")) {
-          throw new Error("Characters $( found in a comment");
-        }
-        if (value.includes("$)")) {
-          throw new Error("Characters $) found in a comment");
-        }
-      } else {
-        if (value === "${") {
-          ++this.scopeDepth;
-        } else if (value === "$}") {
-          --this.scopeDepth;
-          if (this.scopeDepth < 0) {
-            throw new Error("$} without corresponding ${");
-          }
-        }
-      }
-    }
-    return this.lastToken;
-  }
-  get lastIndex() {
-    while (this.line < (this.lastToken?.line ?? 0) || this.line === (this.lastToken?.line ?? 0) && this.column < (this.lastToken?.column ?? 0)) {
-      switch (this.mmData[this.index]) {
-        case "\r":
-          break;
-        case "\n":
-          ++this.line;
-          this.column = 0;
-          break;
-        default:
-          ++this.column;
-      }
-      ++this.index;
-    }
-    return this.index;
-  }
-  get lastTokenLength() {
-    return this.lastToken?.value.length ?? 0;
-  }
-  getClosingString() {
-    const lines = [""];
-    if (this.inComment) {
-      throw new Error(`getClosingString called while in comment`);
-    }
-    for (let index = this.scopeDepth; index > 0; --index) {
-      lines.push("  ".repeat(index) + "$}");
-    }
-    lines.push("");
-    return lines.join("\n");
-  }
-};
-
-// src/helpers/getParserAndTokenReader.ts
-var getParserAndTokenReader = (config, mmData) => {
-  const completeConfig = applyDefaultsToConfig(config);
-  const tokensCreator = new TokensCreator();
-  const mmTokens = tokensCreator.createTokensFromText(mmData);
-  const tokenReader = new TokenReaderWithIndex(mmData, mmTokens);
-  const { createMmParser } = completeConfig.mm;
-  const mmParser = createMmParser(mapConfigToGlobalState(completeConfig));
-  return { tokenReader, mmParser };
-};
-
 // yamma/server/src/mmp/MmpParser.ts
 var import_nearley6 = __toESM(require_nearley());
 
@@ -11271,7 +11053,7 @@ var MmpStatistics = class {
 };
 
 // yamma/server/src/syntaxCompletion/SyntaxCompletion.ts
-var import_nearley5 = __toESM(require_nearley());
+var import_nearley4 = __toESM(require_nearley());
 
 // yamma/server/src/grammar/MmLexerFromTokens.ts
 var MmLexerFromTokens = class {
@@ -11325,13 +11107,13 @@ var SyntaxCompletion = class _SyntaxCompletion {
     const stepFormula = this.cursorContext.formulaBeforeCursor();
     if (this.mmParser != void 0 && stepFormula != void 0) {
       this.mmParser.grammar.lexer = new MmLexerFromTokens(stepFormula);
-      let parser = new import_nearley5.Parser(this.mmParser.grammar);
+      let parser = new import_nearley4.Parser(this.mmParser.grammar);
       try {
         parser.feed("");
         if (parser.results.length === 0) {
           const stepFormulaString = concatTokenValuesWithSpaces(stepFormula);
           this.mmParser.grammar.lexer = new MmLexer(this.mmParser.workingVars);
-          parser = new import_nearley5.Parser(this.mmParser.grammar);
+          parser = new import_nearley4.Parser(this.mmParser.grammar);
           parser.feed(stepFormulaString + " UnxpexcteEndOfFormula");
         }
       } catch (error) {
@@ -11473,6 +11255,72 @@ var ShortDiagnosticMessageForSyntaxError = class {
   }
   //#endregion diagnosticMessageForSyntaxError
 };
+
+// yamma/server/src/mm/TheoryLoader.ts
+var import_vscode_languageserver6 = __toESM(require_main4());
+
+// yamma/server/src/stepSuggestion/ModelLoader.ts
+var import_vscode_languageserver4 = __toESM(require_main4());
+
+// yamma/server/src/stepSuggestion/ModelBuilder.ts
+var import_nearley5 = __toESM(require_nearley());
+
+// yamma/server/src/mm/DiagnosticEventHandler.ts
+var import_vscode_languageserver5 = __toESM(require_main4());
+var url = __toESM(require("url"));
+var DiagnosticEventHandler = class _DiagnosticEventHandler {
+  constructor(sink) {
+    // arrow function binds `this` automatically
+    this.formulaNonParsableEventHandler = (eventArgs) => {
+      const labeledStatement = eventArgs.labeledStatement;
+      const content = labeledStatement.Content;
+      const formula = labeledStatement.formula;
+      const symbolThatTriggeredParsingError = eventArgs.parseResult.parser.current;
+      let range2 = oneCharacterRange(content[formula.length - 1].range.end);
+      if (symbolThatTriggeredParsingError < formula.length)
+        range2 = content[symbolThatTriggeredParsingError].range;
+      const mmDiagnostic = {
+        severity: import_vscode_languageserver5.DiagnosticSeverity.Error,
+        message: `Formula in statement "${eventArgs.labeledStatement.Label}" is not parsable ` + eventArgs.parseResult.error?.message,
+        range: range2,
+        code: "FormulaNonParsable" /* formulaNonParsable */,
+        provableStatementLabel: eventArgs.labeledStatement.Label,
+        source: "yamma",
+        mmFilePath: eventArgs.labeledStatement.labelToken.filePath
+      };
+      const publishDiagnosticsParams = {
+        uri: url.pathToFileURL(eventArgs.labeledStatement.labelToken.filePath).href,
+        diagnostics: [mmDiagnostic]
+      };
+      this.sink.sendDiagnostics(publishDiagnosticsParams);
+    };
+    this.sink = sink;
+  }
+  static {
+    this._instance = null;
+  }
+  static getInstance(sink) {
+    if (!_DiagnosticEventHandler._instance) {
+      if (!sink) {
+        throw new Error("DiagnosticEventHandler not initialized: provide a sink on first call.");
+      }
+      _DiagnosticEventHandler._instance = new _DiagnosticEventHandler(sink);
+    }
+    return _DiagnosticEventHandler._instance;
+  }
+};
+
+// yamma/server/src/mm/TheoryLoader.ts
+var path2 = require("path");
+var url2 = require("url");
+
+// yamma/server/src/mm/ConfigurationManager.ts
+var DiagnosticMessageForSyntaxError = /* @__PURE__ */ ((DiagnosticMessageForSyntaxError2) => {
+  DiagnosticMessageForSyntaxError2["short"] = "short";
+  DiagnosticMessageForSyntaxError2["verbose"] = "verbose";
+  return DiagnosticMessageForSyntaxError2;
+})(DiagnosticMessageForSyntaxError || {});
+var ConfigurationManager_default = DiagnosticMessageForSyntaxError;
 
 // yamma/server/src/mmp/MmpValidator.ts
 var MmpValidator = class _MmpValidator {
@@ -14053,6 +13901,45 @@ var MmpGetProofStatement = class {
 };
 
 // yamma/server/src/mmp/MmpParser.ts
+var MmpParserErrorCode2 = /* @__PURE__ */ ((MmpParserErrorCode3) => {
+  MmpParserErrorCode3["unexpectedEndOfFormula"] = "unexpectedEndOfFormula";
+  MmpParserErrorCode3["formulaSyntaxError"] = "formulaSyntaxError";
+  MmpParserErrorCode3["firstTokenWithMoreThanTwoColumns"] = "firstTokenWithMoreThanTwoColumns";
+  MmpParserErrorCode3["stepRefCannotContainAComma"] = "stepRefCannotContainAComma";
+  MmpParserErrorCode3["unknownLabel"] = "unknownLabel";
+  MmpParserErrorCode3["provableStatementWithFailedVerification"] = "provableStatementWithFailedVerification";
+  MmpParserErrorCode3["unificationError"] = "unificationError";
+  MmpParserErrorCode3["workingVarUnificationError"] = "workingVarUnificationError";
+  MmpParserErrorCode3["refStatementUnificationError"] = "refStatementUnificationError";
+  MmpParserErrorCode3["wrongNumberOfEHyps"] = "wrongNumberOfEHyps";
+  MmpParserErrorCode3["duplicatedEHyp"] = "duplicatedEHyp";
+  MmpParserErrorCode3["wrongVariableKind"] = "wrongVariableKind";
+  MmpParserErrorCode3["notAnAssertion"] = "notAnAssertion";
+  MmpParserErrorCode3["unknownStepRef"] = "unknownStepRef";
+  MmpParserErrorCode3["djVarsRestrictionViolated"] = "djVarsRestrictionViolated";
+  MmpParserErrorCode3["disjVarSyntaxError"] = "disjVarSyntaxError";
+  MmpParserErrorCode3["eHypLabelNotCoherentForAlreadyExistingTheorem"] = "eHypLabelNotCoherentForAlreadyExistingTheorem";
+  MmpParserErrorCode3["missingQedStatementForAlreadyExistingTheorem"] = "missingQedStatementForAlreadyExistingTheorem";
+  MmpParserErrorCode3["doesntMatchTheoryFormula"] = "doesntMatchTheoryFormula";
+  MmpParserErrorCode3["disjVarConstraintNotInTheTheory"] = "disjVarConstraintNotInTheTheory";
+  MmpParserErrorCode3["wrongNumberOfEHypsForAlreadyExistingTheorem"] = "wrongNumberOfEHypsForAlreadyExistingTheorem";
+  MmpParserErrorCode3["disjVarWithItself"] = "disjVarWithItself";
+  MmpParserErrorCode3["mmFormulaNonParsable"] = "FormulaNonParsable";
+  return MmpParserErrorCode3;
+})(MmpParserErrorCode2 || {});
+var MmpParserWarningCode2 = /* @__PURE__ */ ((MmpParserWarningCode3) => {
+  MmpParserWarningCode3["missingLabel"] = "missingLabel";
+  MmpParserWarningCode3["missingFormula"] = "missingFormula";
+  MmpParserWarningCode3["missingRef"] = "missingRef";
+  MmpParserWarningCode3["missingEHyps"] = "missingEHyps";
+  MmpParserWarningCode3["missingMandatoryDisjVarsStatement"] = "missingMandatoryDisjVarsStatement";
+  MmpParserWarningCode3["missingDummyDisjVarsStatement"] = "missingDummyDisjVarsStatement";
+  MmpParserWarningCode3["missingTheoremLabel"] = "missingTheoremLabel";
+  MmpParserWarningCode3["lastStatementShouldBeQed"] = "lastStatementShouldBeQED";
+  MmpParserWarningCode3["missingComment"] = "missingComment";
+  MmpParserWarningCode3["isDiscouraged"] = "isDiscouraged";
+  return MmpParserWarningCode3;
+})(MmpParserWarningCode2 || {});
 var MmpParser = class _MmpParser {
   //#region constructor
   // constructor(textToParse: string, labelToStatementMap: Map<string, LabeledStatement>,
@@ -14800,6 +14687,208 @@ var MmpParser = class _MmpParser {
   }
   //#endregion createProofSteps
   //#endregion constructor
+};
+
+// yamma/server/src/mmp/FormulaToParseNodeCache.ts
+var FormulaToParseNodeCache = class {
+  /** cache for formula recently parsed. It really speeds up the MmpParser, because
+   * it allows avoiding most of the parsing time (an .mmp file, often doesn't
+   * change much from an edit to the other)
+   */
+  constructor() {
+    this.formulaToInternalNodeMap = /* @__PURE__ */ new Map();
+  }
+  add(formula, internalNode) {
+    this.formulaToInternalNodeMap.set(formula, internalNode);
+  }
+  invalidate(stepFormulaString) {
+    this.formulaToInternalNodeMap.delete(stepFormulaString);
+  }
+};
+
+// yamma/server/src/general/GlobalState.ts
+var GlobalState = class {
+  constructor() {
+    /** true iff the extension is loading a theory; used to avoid multiple loading
+     * triggered by different events
+     */
+    this.loadingATheory = false;
+    /** true iff a unify() has been performed, but the cursor has not been updated yet*/
+    this._isCursorPositionUpdateRequired = false;
+    this.isTriggerSuggestRequired = false;
+  }
+  get isCursorPositionUpdateRequired() {
+    const result = this._isCursorPositionUpdateRequired;
+    this._isCursorPositionUpdateRequired = false;
+    return result;
+  }
+  requireCursorPositionUpdate() {
+    this._isCursorPositionUpdateRequired = true;
+  }
+  setSuggestedRangeForCursorPosition(range2) {
+    this.suggestedRangeForCursorPosition = range2;
+  }
+  requireTriggerSuggest() {
+    this.isTriggerSuggestRequired = true;
+  }
+  resetTriggerSuggest() {
+    this.isTriggerSuggestRequired = false;
+  }
+  /** cache for formula recently parsed. It really speeds up the MmpParser, because
+   * it allows avoiding most of the parsing time (an .mmp file, often doesn't
+   * change much from an edit to the other)
+   */
+  get formulaToParseNodeCache() {
+    if (this._formulaToParseNodeCache == void 0)
+      this._formulaToParseNodeCache = new FormulaToParseNodeCache();
+    return this._formulaToParseNodeCache;
+  }
+};
+
+// src/defaultConfig.ts
+var defaultConfig = {
+  common: {
+    proofMode: "compressed" /* compressed */,
+    variableKindsConfig: [
+      {
+        kind: "wff",
+        workingVarPrefix: "W",
+        lspSemantictokenType: "variable"
+      },
+      {
+        kind: "setvar",
+        workingVarPrefix: "S",
+        lspSemantictokenType: "string"
+      },
+      {
+        kind: "class",
+        workingVarPrefix: "C",
+        lspSemantictokenType: "keyword"
+      }
+    ]
+  },
+  mm: {
+    maxNumberOfProblems: 100,
+    mmFileFullPath: "",
+    disjVarAutomaticGeneration: "GenerateNone" /* GenerateNone */,
+    labelsOrderInCompressedProof: "mostReferencedFirstAndNiceFormatting" /* mostReferencedFirstAndNiceFormatting */,
+    diagnosticMessageForSyntaxError: ConfigurationManager_default.short,
+    progressCallback: () => {
+    },
+    singleThread: false,
+    createMmParser: (...params) => new MmParser(...params)
+  },
+  unifier: {
+    maxNumberOfHypothesisDispositionsForStepDerivation: 1e5,
+    renumber: true,
+    removeUnusedStatements: true,
+    getProofStripHeader: true
+  }
+};
+
+// src/helpers/config.ts
+var applyDefaultsToConfig = (config) => {
+  return config ? {
+    common: { ...defaultConfig.common, ...config.common },
+    mm: { ...defaultConfig.mm, ...config.mm },
+    unifier: { ...defaultConfig.unifier, ...config.unifier }
+  } : defaultConfig;
+};
+var mapConfigToGlobalState = (config) => {
+  const variableKindsConfiguration = new Map(
+    config.common.variableKindsConfig.map((kindConfig) => [
+      kindConfig.kind,
+      kindConfig
+    ])
+  );
+  const lastFetchedSettings = {
+    ...config.mm,
+    proofMode: config.common.proofMode,
+    variableKindsConfiguration
+  };
+  const globalState = new GlobalState();
+  globalState.lastFetchedSettings = lastFetchedSettings;
+  return globalState;
+};
+
+// src/helpers/tokenReaderWithIndex.ts
+var TokenReaderWithIndex = class extends TokenReader {
+  constructor(mmData, tokens) {
+    super(tokens);
+    this.mmData = mmData;
+    this.index = 0;
+    this.line = 0;
+    this.column = 0;
+    this.inComment = false;
+    this.scopeDepth = 0;
+  }
+  Read() {
+    this.lastToken = super.Read();
+    if (!!this.lastToken) {
+      const value = this.lastToken.value;
+      if (this.inComment) {
+        if (value === "$)") {
+          this.inComment = false;
+        } else if (value.includes("$(")) {
+          throw new Error("Characters $( found in a comment");
+        }
+        if (value.includes("$)")) {
+          throw new Error("Characters $) found in a comment");
+        }
+      } else {
+        if (value === "${") {
+          ++this.scopeDepth;
+        } else if (value === "$}") {
+          --this.scopeDepth;
+          if (this.scopeDepth < 0) {
+            throw new Error("$} without corresponding ${");
+          }
+        }
+      }
+    }
+    return this.lastToken;
+  }
+  get lastIndex() {
+    while (this.line < (this.lastToken?.line ?? 0) || this.line === (this.lastToken?.line ?? 0) && this.column < (this.lastToken?.column ?? 0)) {
+      switch (this.mmData[this.index]) {
+        case "\r":
+          break;
+        case "\n":
+          ++this.line;
+          this.column = 0;
+          break;
+        default:
+          ++this.column;
+      }
+      ++this.index;
+    }
+    return this.index;
+  }
+  get lastTokenLength() {
+    return this.lastToken?.value.length ?? 0;
+  }
+  getClosingString() {
+    const lines = [""];
+    if (this.inComment) {
+      throw new Error(`getClosingString called while in comment`);
+    }
+    for (let index = this.scopeDepth; index > 0; --index) {
+      lines.push("  ".repeat(index) + "$}");
+    }
+    lines.push("");
+    return lines.join("\n");
+  }
+};
+
+// src/helpers/getParserAndTokenReader.ts
+var getParserAndTokenReader = (config, mmData) => {
+  const completeConfig = applyDefaultsToConfig(config);
+  const tokensCreator = new TokensCreator();
+  const mmTokens = tokensCreator.createTokensFromText(mmData);
+  const tokenReader = new TokenReaderWithIndex(mmData, mmTokens);
+  const { createMmParser } = completeConfig.mm;
+  const mmParser = createMmParser(mapConfigToGlobalState(completeConfig));
+  return { tokenReader, mmParser };
 };
 
 // yamma/server/src/mmp/WorkingVarsUUnifierApplier.ts
@@ -16744,11 +16833,30 @@ var truncateCount = (mmData, count, config) => {
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  MmParser,
+  MmParserErrorCode,
+  MmParserEvents,
+  MmParserWarningCode,
+  MmpParser,
+  MmpParserErrorCode,
+  MmpParserWarningCode,
+  ProvableStatement,
+  addParseNodes,
   compressOrDecompressProofs,
+  createLabelToFormulaMap,
+  createLabelToParseNodeForThreadMap,
+  createMessageDone,
+  createMessageLog,
+  createMessageProgress,
+  createParseNodeForThread,
+  createParseNodesInANewThread,
+  createParseNodesInCurrentThread,
   createUnifier,
   defaultConfig,
+  defaultProgressCallback,
   parseMm,
   parseMmp,
+  postMessage,
   truncateAfter,
   truncateBefore,
   truncateCount

@@ -1,8 +1,8 @@
-import { IExtensionSettings, ProofMode } from 'yamma-server/src/mm/ConfigurationManager';
-import { MmParser } from 'yamma-server/src/mm/MmParser';
-import { MmpParser } from 'yamma-server/src/mmp/MmpParser';
-import { MmpUnifier, MmpUnifierArgs } from 'yamma-server/src/mmp/MmpUnifier';
-import { ProgressCallback } from 'yamma-server/src/parseNodesCreatorThread/ParseNodesCreator';
+import { IExtensionSettings, ProofMode } from '../yamma/server/src/mm/ConfigurationManager';
+import { MmParser } from '../yamma/server/src/mm/MmParser';
+import { MmpParser } from '../yamma/server/src/mmp/MmpParser';
+import { MmpUnifier, MmpUnifierArgs } from '../yamma/server/src/mmp/MmpUnifier';
+import { ProgressCallback } from '../yamma/server/src/parseNodesCreatorThread/ParseNodesCreator';
 export type UnifierResult = {
     text: string;
     mmpUnifier: MmpUnifier;
