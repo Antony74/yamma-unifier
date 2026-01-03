@@ -41,8 +41,5 @@
         "singleQuote": true
     },
     "type": "commonjs",
-    "types": "dist/types/src",
-    "engines": {
-        "node": ">=22.18.0"
-    }
+    "types": "dist/types/src"
 }
