@@ -1,9 +1,8 @@
-import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
     test: {
         include: ['test/**/*.test.ts'],
-        coverage: { include: ['src'], exclude: ['/yamma/**'] },
+        coverage: { include: ['src'], exclude: ['yamma/**'] },
     },
 });
