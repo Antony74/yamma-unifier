@@ -19,9 +19,15 @@ describe(`yamma-unifier`, () => {
         expect(result.text).toEqual(exampleFiles['unified.mmp']);
     });
 
-    it(`throws an error given bad mmData`, async () => {
-        await expect(async () =>
-            createUnifier(exampleFiles['bad1.mm']),
-        ).rejects.toEqual(new Error('A comment was never closed'));
+    it(`throws an error given bad mmData`, () => {
+        expect(() => createUnifier(exampleFiles['bad1.mm'])).toThrowError(
+            new Error('A comment was never closed'),
+        );
     });
+
+    it(`can get a proof`, () => {
+        const unifier = createUnifier(exampleFiles['example.mm']);
+        const result = unifier.get('th1');
+        expect(result.text).toEqual(exampleFiles['unified.mmp']);
+    })
 });
