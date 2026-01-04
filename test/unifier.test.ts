@@ -29,5 +29,21 @@ describe(`yamma-unifier`, () => {
         const unifier = createUnifier(exampleFiles['example.mm']);
         const result = unifier.get('th1');
         expect(result.text).toEqual(exampleFiles['unified.mmp']);
-    })
+    });
+
+    it(`can get a proof without stripping the header`, () => {
+        const unifier = createUnifier(exampleFiles['example.mm'], {
+            unifier: { getProofStripHeader: false },
+        });
+        const result = unifier.get('th1');
+        expect(result.text).toContain('* MissingComment');
+    });
+
+    it(`returns suitable diagnostics if it can't get a proof`, () => {
+        const unifier = createUnifier(exampleFiles['example.mm']);
+        const result = unifier.get('notTh');
+        const { diagnostics } = result.mmpUnifier.mmpParser;
+        expect(diagnostics.length).toEqual(1);
+        expect(diagnostics[0].message).toEqual(`notTh not found`);
+    });
 });
