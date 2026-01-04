@@ -12,6 +12,7 @@ export const compressOrDecompressProofs = (
     proofIds: string[],
     all: boolean,
     config?: UnifierConfig,
+    actionCallback?: (label: string) => void,
 ): string => {
     const completeConfig = applyDefaultsToConfig(config);
 
@@ -37,6 +38,7 @@ export const compressOrDecompressProofs = (
         mmData,
         proofsToReplace,
         unifier,
+        actionCallback,
     );
 
     return chunks.join('');

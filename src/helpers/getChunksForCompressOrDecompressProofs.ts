@@ -1,4 +1,3 @@
-import * as color from 'picocolors';
 import { Unifier } from '../unifierDefinitions';
 import { ProofToReplace } from './parseForCompressOrDecompressProofs';
 
@@ -7,6 +6,7 @@ export const getChunksForCompressOrDecompressProofs = (
     mmData: string,
     proofsToReplace: ProofToReplace[],
     unifier: Unifier,
+    actionCallback: (label: string) => void = () => {}
 ): string[] => {
     const chunks: string[] = [];
 
@@ -37,7 +37,7 @@ export const getChunksForCompressOrDecompressProofs = (
             textForFormula &&
             proofStatement
         ) {
-            console.log(color.gray(`${command}ing ${label}`));
+            actionCallback(label);
 
             const proofDefinition = `${label} $p ${textForFormula}`;
 
