@@ -25,13 +25,13 @@ export type VariableKindConfig = {
     lspSemantictokenType: 'variable' | 'string' | 'keyword';
 };
 
+type CreateMmParser = (...params: ConstructorParameters<typeof MmParser>) => MmParser;
+
 export type MmConfig = Omit<
     IExtensionSettings & {
         progressCallback: ProgressCallback;
         singleThread: boolean;
-        createMmParser: (
-            ...params: ConstructorParameters<typeof MmParser>
-        ) => MmParser;
+        createMmParser: CreateMmParser;
     },
     'variableKindsConfiguration' | 'proofMode'
 >;
