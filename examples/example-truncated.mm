@@ -18,4 +18,5 @@ ${
 $}
 $( Simple example, just the rule of Modus Ponens being applied $)
 th1 $p |- t = t $=
-  ( tze tpl weq a2 wim a1 mp ) ABCZADZAADZAEZJJKFLIAAGHH $.
+  tt tze tpl tt weq tt tt weq tt a2 tt tze tpl tt weq tt tze tpl tt weq tt
+  tt weq wim tt a2 tt tze tpl tt tt a1 mp mp $.

@@ -60,7 +60,7 @@ export const exampleFiles = {
         ...th2Normal,
     ].join('\n'),
 
-    'example-truncated.mm': [...exampleMM, ...th1Compressed].join('\n'),
+    'example-truncated.mm': [...exampleMM, ...th1Normal, ``].join('\n'),
 
     'example.mm': [...exampleMM, ...th1Normal, ...th2Normal].join('\n'),
 
