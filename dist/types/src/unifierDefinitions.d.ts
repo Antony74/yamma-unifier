@@ -18,7 +18,7 @@ export type VariableKindConfig = {
     workingVarPrefix: string;
     lspSemantictokenType: 'variable' | 'string' | 'keyword';
 };
-type CreateMmParser = (...params: ConstructorParameters<typeof MmParser>) => MmParser;
+export type CreateMmParser = (...params: ConstructorParameters<typeof MmParser>) => MmParser;
 export type MmConfig = Omit<IExtensionSettings & {
     progressCallback: ProgressCallback;
     singleThread: boolean;
