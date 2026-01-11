@@ -20,6 +20,7 @@ export declare class MmpValidator {
     constructor(mmParser: MmParser, globalState: GlobalState, diagnosticMessageForSyntaxError: DiagnosticMessageForSyntaxError);
     hypStack(assertionStatement: AssertionStatement): string[][];
     private updateStatistics;
+    private addDiagnosticsForProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars;
     validateFullDocumentText(textToValidate: string, textDocumentUri: string, mmParser: MmParser, workingVars: WorkingVars): void;
     validateFullDocument(textDocument: TextDocument): Diagnostic[];
     static addDiagnosticError(message: string, range: Range, code: MmpParserErrorCode, diagnostics: Diagnostic[]): void;

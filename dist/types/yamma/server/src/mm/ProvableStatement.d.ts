@@ -14,4 +14,5 @@ export declare class ProvableStatement extends AssertionStatement {
     get compressedProofString(): string;
     get CompressedProofLabels(): string[];
     get isUnproven(): boolean;
+    get hasCompressedProof(): boolean;
 }

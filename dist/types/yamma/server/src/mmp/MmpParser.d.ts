@@ -58,7 +58,8 @@ export declare enum MmpParserWarningCode {
     missingTheoremLabel = "missingTheoremLabel",
     lastStatementShouldBeQed = "lastStatementShouldBeQED",
     missingComment = "missingComment",
-    isDiscouraged = "isDiscouraged"
+    isDiscouraged = "isDiscouraged",
+    proofCompleteButWorkingVarsRemainAndNoUnusedTheoryVars = "proofCompleteButWorkingVarsRemainAndNoUnusedTheoryVars"
 }
 export interface IMmpParserParams {
     textToParse: string;

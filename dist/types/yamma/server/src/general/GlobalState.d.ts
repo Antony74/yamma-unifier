@@ -35,6 +35,13 @@ export declare class GlobalState {
     private _isCursorPositionUpdateRequired;
     get isCursorPositionUpdateRequired(): boolean;
     requireCursorPositionUpdate(): void;
+    /** true iff the last unification determined that the proof is complete,
+     * but it contains working variables, and there are no unused theory variables
+     * to replace them with. In this case, the user should be informed that he/she
+     * should manually replace the working variables in order to complete the proof.
+     * In most theories, this should never happen, in practice.
+     */
+    isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars: boolean;
     suggestedRangeForCursorPosition?: Range;
     setSuggestedRangeForCursorPosition(range: Range | undefined): void;
     isTriggerSuggestRequired: boolean;

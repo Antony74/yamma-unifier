@@ -4,6 +4,7 @@ import { BlockStatement } from '../mm/BlockStatement';
 import { EHyp } from '../mm/EHyp';
 import { LabeledStatement } from '../mm/LabeledStatement';
 import { ProvableStatement } from '../mm/ProvableStatement';
+import { Statement } from '../mm/Statements';
 import { MmpProof } from './MmpProof';
 import { MmpProofStep } from './MmpProofStep';
 import { ProofStepFirstTokenInfo } from './MmpStatements';
@@ -34,8 +35,8 @@ export declare class MmToMmpConverter {
     buildMmpProofStep(assertionStatementProofStep: AssertionStatement, assertionStatementWithSubstitution: string[], substitution: Map<string, string[]>, isLastStatementInMmProof: boolean): MmpProofStep;
     private addAssertionStatementWithSubstitution;
     private addSingleStepToMmpProof;
-    private addMmpStatementsFromDecompressedProof;
-    private getMmpStatementsFromCompressedProof;
+    private addMmpStatementsFromMmStatementsInTheProof;
+    getMmStatementsFromCompressedProof(provableStatement: ProvableStatement): Statement[];
     private addMmpStatements;
     buildStatementTokens(var1: string, var2: string): MmToken[];
     addDisjStatements(provableStatement: ProvableStatement): void;

@@ -26,7 +26,8 @@ export declare class OnUnifyHandler {
     mmParser: MmParser;
     configurationManager: ConfigurationManager;
     maxNumberOfHypothesisDispositionsForStepDerivation: number;
-    constructor(textDocumentUri: string, mmParser: MmParser, mmpParser: MmpParser, configurationManager: ConfigurationManager, maxNumberOfHypothesisDispositionsForStepDerivation: number, renumber: boolean, removeUnusedStatements: boolean);
+    globalState: GlobalState;
+    constructor(textDocumentUri: string, mmParser: MmParser, mmpParser: MmpParser, configurationManager: ConfigurationManager, maxNumberOfHypothesisDispositionsForStepDerivation: number, renumber: boolean, removeUnusedStatements: boolean, globalState: GlobalState);
     private buildMmpCompressedProofCreator;
     private parseMmpFile;
     private unify;

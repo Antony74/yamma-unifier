@@ -1,11 +1,12 @@
 import { Grammar } from 'nearley';
-import { Diagnostic, TextEdit } from 'vscode-languageserver';
+import { TextEdit } from 'vscode-languageserver';
 import { BlockStatement } from '../mm/BlockStatement';
 import { MmpParser } from './MmpParser';
 import { MmpProof } from './MmpProof';
 import { WorkingVars } from './WorkingVars';
 import { ProofMode } from '../mm/ConfigurationManager';
 import { IMmpCompressedProofCreator } from './proofCompression/MmpCompressedProofCreator';
+import { GlobalState } from '../general/GlobalState';
 export interface MmpUnifierArgs {
     mmpParser: MmpParser;
     proofMode: ProofMode;
@@ -16,6 +17,7 @@ export interface MmpUnifierArgs {
     leftMarginForCompressedProof?: number;
     characterPerLine?: number;
     mmpCompressedProofCreator?: IMmpCompressedProofCreator;
+    globalState?: GlobalState;
 }
 export declare class MmpUnifier {
     mmpParser: MmpParser;
@@ -37,11 +39,15 @@ export declare class MmpUnifier {
     thrownError: boolean;
     private _charactersPerLine;
     private _mmpCompressedProofCreator;
+    private globalState?;
+    private isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars;
     constructor(args: MmpUnifierArgs);
     buildTextEditArray(newUProof: MmpProof): TextEdit[];
     private isDiscouragedNotAProblem;
     private isProofToBeGenerated;
-    buildProofStatementIfProofIsComplete(uProof: MmpProof, diagnostics: Diagnostic[]): void;
+    private replaceRemainingWorkingVarsWithTheoryVars;
+    buildProofStatement(uProof: MmpProof): void;
+    private ifProofCompleteReplaceRemainingWoringVarsAndBuildProofStatement;
     /**
      * Unifies textToParse and builds a UProof and a single TextEdit to replace the whole
      * current document

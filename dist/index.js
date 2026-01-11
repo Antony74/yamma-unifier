@@ -7676,8 +7676,8 @@ __export(index_exports, {
   MmParserEvents: () => MmParserEvents,
   MmParserWarningCode: () => MmParserWarningCode,
   MmpParser: () => MmpParser,
-  MmpParserErrorCode: () => MmpParserErrorCode2,
-  MmpParserWarningCode: () => MmpParserWarningCode2,
+  MmpParserErrorCode: () => MmpParserErrorCode,
+  MmpParserWarningCode: () => MmpParserWarningCode,
   ProvableStatement: () => ProvableStatement,
   addParseNodes: () => addParseNodes,
   compressOrDecompressProofs: () => compressOrDecompressProofs,
@@ -7966,7 +7966,7 @@ var dummyRange = oneCharacterRange({ line: 0, character: 0 });
 function rebuildOriginalStringFromTokens(tokens) {
   let result = "";
   if (tokens.length > 0)
-    result = tokens[0].value.padStart(tokens[0].range.start.character, " ");
+    result = " ".repeat(tokens[0].range.start.character) + tokens[0].value;
   for (let i = 0; i < tokens.length - 1; i++) {
     const currentToken = tokens[i + 1];
     const previousToken = tokens[i];
@@ -8812,6 +8812,9 @@ var ProvableStatement = class extends AssertionStatement {
   }
   get isUnproven() {
     return this.Proof.length == 1 && this.Proof[0] == "?";
+  }
+  get hasCompressedProof() {
+    return this.Proof.length > 1 && this.Proof[0] == "(";
   }
 };
 
@@ -11250,6 +11253,993 @@ var DiagnosticMessageForSyntaxError = /* @__PURE__ */ ((DiagnosticMessageForSynt
 })(DiagnosticMessageForSyntaxError || {});
 var ConfigurationManager_default = DiagnosticMessageForSyntaxError;
 
+// yamma/server/src/mmp/MmpSubstitutionApplier.ts
+var MmpSubstitutionApplier = class _MmpSubstitutionApplier {
+  constructor(substitution, uStepIndex, uProof, assertion, outermostBlock, workingVars, grammar) {
+    this.substitution = substitution;
+    this.uStepIndex = uStepIndex;
+    this.assertion = assertion;
+    this.outermostBlock = outermostBlock;
+    this.workingVars = workingVars;
+    this.grammar = grammar;
+    this.uProof = uProof;
+    this.uProofStep = this.uProof.mmpStatements[uStepIndex];
+    this.logicalSystemEHyps = this.assertion.frame?.eHyps;
+    this.eHypUSteps = this.uProofStep.eHypUSteps;
+  }
+  //#region createParseNode
+  //TODO this one is probably to be removed, it's called nowhere
+  static createParseNodeForMmToken(parseNodeForLogicalSystemFormula, substitution) {
+    const symbol = parseNodeForLogicalSystemFormula.value;
+    let newParseNode = substitution.get(symbol);
+    if (newParseNode === void 0) {
+      newParseNode = new MmToken(symbol, 0, 0);
+    }
+    return newParseNode;
+  }
+  static isInternalNodeForLogicalVariable(parseNodeForLogicalSystemFormula, outermostBlock) {
+    const result = parseNodeForLogicalSystemFormula instanceof InternalNode && parseNodeForLogicalSystemFormula.parseNodes.length === 1 && parseNodeForLogicalSystemFormula.parseNodes[0] instanceof MmToken && outermostBlock.v.has(parseNodeForLogicalSystemFormula.parseNodes[0].value);
+    return result;
+  }
+  static createParseNodeForLogicalVariable(internalNodeForLogicalVariable, substitution) {
+    const symbol = internalNodeForLogicalVariable.parseNodes[0].value;
+    const newParseNode = substitution.get(symbol);
+    if (newParseNode == void 0) {
+      console.log(`Error! The USubstitutionBuilder is trying to build a build a ParseNode, but the given substitution does not contain a substitution value for the logical variable '${symbol}'`);
+      throw new Error(`Error! The USubstitutionBuilder is trying to build a build a ParseNode, but the given substitution does not contain a substitution value for the logical variable '${symbol}'`);
+    }
+    return newParseNode;
+  }
+  static createParseNodeForInternalNode(parseNodeForLogicalSystemFormula, substitution, outermostBlock) {
+    const parseNodes = [];
+    parseNodeForLogicalSystemFormula.parseNodes.forEach((parseNode) => {
+      const newParseNode = _MmpSubstitutionApplier.createParseNode(
+        parseNode,
+        substitution,
+        outermostBlock
+      );
+      parseNodes.push(newParseNode);
+    });
+    const newInternalNode = new InternalNode(
+      parseNodeForLogicalSystemFormula.label,
+      parseNodeForLogicalSystemFormula.kind,
+      parseNodes
+    );
+    return newInternalNode;
+  }
+  static createParseNode(parseNodeForLogicalSystemFormula, substitution, outermostBlock) {
+    let newParseNode;
+    if (_MmpSubstitutionApplier.isInternalNodeForLogicalVariable(
+      parseNodeForLogicalSystemFormula,
+      outermostBlock
+    )) {
+      newParseNode = _MmpSubstitutionApplier.createParseNodeForLogicalVariable(
+        parseNodeForLogicalSystemFormula,
+        substitution
+      );
+    } else if (parseNodeForLogicalSystemFormula instanceof MmToken)
+      newParseNode = _MmpSubstitutionApplier.createParseNodeForMmToken(
+        parseNodeForLogicalSystemFormula,
+        substitution
+      );
+    else
+      newParseNode = _MmpSubstitutionApplier.createParseNodeForInternalNode(
+        parseNodeForLogicalSystemFormula,
+        substitution,
+        outermostBlock
+      );
+    return newParseNode;
+  }
+  //#endregion createParseNode
+  // applise the 
+  // applySubstitutionToExistingNode(parseNode: ParseNode,
+  // 	parseNodeForLogicalSystemFormula: ParseNode): ParseNode {
+  // 	let newParseNode: ParseNode = parseNode;
+  // 	if (parseNode instanceof MmToken && this.workingVars.isWorkingVar(parseNode.value)) {
+  // 		const nodeForSubstitution: ParseNode | undefined = this.substitution.get(parseNode.value);
+  // 		if (nodeForSubstitution != undefined)
+  // 			// parseNode is a working var for which a substitution was found
+  // 			newParseNode = nodeForSubstitution;
+  // 	}
+  // 	return newParseNode;
+  // }
+  applySubstitutionToSingleNode(uProofStep, parseNodeForLogicalSystemFormula) {
+    if (uProofStep.parseNode == void 0)
+      uProofStep.parseNode = _MmpSubstitutionApplier.createParseNodeForInternalNode(
+        parseNodeForLogicalSystemFormula,
+        this.substitution,
+        this.outermostBlock
+      );
+  }
+  //#endregion applySubstitutionToSingleNode
+  //#region applySubstitutionToEHypsAndAddMissingOnes
+  // it is assumed to be eHypUSteps.length  <= logicalSystemEHyps.length and the missing
+  // refs are assumed to be at the end
+  applySubstitutionToEHypsAndAddMissingOnes() {
+    let indexToInsertNewEHyps = this.uStepIndex;
+    for (let i = 0; i < this.logicalSystemEHyps.length; i++) {
+      const logicalSystemEHyp = this.logicalSystemEHyps[i];
+      if (i < this.eHypUSteps.length) {
+        if (this.eHypUSteps[i] === void 0)
+          this.eHypUSteps[i] = this.uProof.createEmptyUStepAndAddItBeforeIndex(indexToInsertNewEHyps++);
+        if (this.eHypUSteps[i].parseNode === void 0)
+          this.eHypUSteps[i].parseNode = _MmpSubstitutionApplier.createParseNodeForInternalNode(
+            logicalSystemEHyp.parseNode,
+            this.substitution,
+            this.outermostBlock
+          );
+      } else {
+        const newEHypUStep = this.uProof.createEmptyUStepAndAddItBeforeIndex(indexToInsertNewEHyps++);
+        newEHypUStep.parseNode = _MmpSubstitutionApplier.createParseNodeForInternalNode(
+          logicalSystemEHyp.parseNode,
+          this.substitution,
+          this.outermostBlock
+        );
+        this.eHypUSteps.push(newEHypUStep);
+      }
+    }
+    return indexToInsertNewEHyps;
+  }
+  //#endregion applySubstitutionToEHypsAndAddMissingOnes
+  /**
+   * Applies a substitution to a single MmpProofStep:
+   * - if the formula is missing, it's added (with working vars)
+   * - if an $e hypothesis is missing, it's added (with working vars)
+   * - new $e hypothesis and the MmpProofStep are added at the end of to the UProof
+   * Returns the new index for the MmpProofStep that was indexed by uStepIndex (this
+   * can be increased, if new hypothesis are added) 
+   */
+  applySubstitution() {
+    const updatedeUStepIndex = this.applySubstitutionToEHypsAndAddMissingOnes();
+    if (this.assertion.parseNode)
+      this.applySubstitutionToSingleNode(this.uProofStep, this.assertion.parseNode);
+    return updatedeUStepIndex;
+  }
+};
+
+// yamma/server/src/mmp/WorkingVarsUnifierInitializer.ts
+var WorkingVarsUnifierInitializer = class {
+  constructor(uProofStep, assertion, substitution, outermostBlock, grammar) {
+    this.startingPairsForMGUFinder = [];
+    this.uProofStep = uProofStep;
+    this.assertion = assertion;
+    this.substitution = substitution;
+    this.outermostBlock = outermostBlock;
+    this.grammar = grammar;
+  }
+  //#region buildStartingPairsForMGUAlgorithm
+  //#region addStartingPairsForMGUAlgorithmForParseNode
+  addStartingPairsForMGUFinderForParseNodeWithLogicalNodeSubstituted(uStepParseNode, newNodeWithSubstitution) {
+    if (GrammarManager.isInternalParseNodeForWorkingVar(uStepParseNode)) {
+      if (!GrammarManager.areParseNodesEqual(uStepParseNode, newNodeWithSubstitution)) {
+        const orderedPairOfNodes = {
+          parseNode1: uStepParseNode,
+          parseNode2: newNodeWithSubstitution
+        };
+        this.startingPairsForMGUFinder.push(orderedPairOfNodes);
+      }
+    } else if (uStepParseNode instanceof InternalNode)
+      for (let i = 0; i < uStepParseNode.parseNodes.length; i++) {
+        this.addStartingPairsForMGUFinderForParseNodeWithLogicalNodeSubstituted(
+          uStepParseNode.parseNodes[i],
+          newNodeWithSubstitution.parseNodes[i]
+        );
+      }
+  }
+  // addStartingPairsForMGUAlgorithmForParseNode(uStepParseNode: InternalNode, logicalSystemFormulaParseNode: InternalNode) {
+  // 	const newNodeWithSubstitution = USubstitutionApplier.createParseNode(logicalSystemFormulaParseNode,
+  // 		this.substitution, this.outermostBlock);
+  // 	this.addStartingPairsForMGUFinderForParseNodeWithLogicalNodeSubstituted(uStepParseNode, newNodeWithSubstitution);
+  // }
+  addStartingPairsForMGUAlgorithmForParseNode(uStepParseNode, logicalSystemFormulaParseNode) {
+    const newNodeWithSubstitution = MmpSubstitutionApplier.createParseNode(
+      logicalSystemFormulaParseNode,
+      this.substitution,
+      this.outermostBlock
+    );
+    if ((GrammarManager.containsWorkingVar(uStepParseNode) || GrammarManager.containsWorkingVar(newNodeWithSubstitution)) && !GrammarManager.areParseNodesEqual(newNodeWithSubstitution, uStepParseNode)) {
+      const orderedPairOfNodes = {
+        parseNode1: newNodeWithSubstitution,
+        parseNode2: uStepParseNode
+      };
+      this.startingPairsForMGUFinder.push(orderedPairOfNodes);
+    }
+  }
+  //#endregion addStartingPairsForMGUAlgorithmForParseNode
+  addStartingPairsForMGUAlgorithmForEHyps() {
+    for (let i = 0; i < this.uProofStep.eHypUSteps.length; i++) {
+      if (this.uProofStep.eHypUSteps[i] != void 0 && this.uProofStep.eHypUSteps[i]?.parseNode != void 0)
+        this.addStartingPairsForMGUAlgorithmForParseNode(
+          this.uProofStep.eHypUSteps[i]?.parseNode,
+          this.assertion.frame?.eHyps[i].parseNode
+        );
+    }
+  }
+  /** builds the starting pairs for the MGU algorithm, for the MmpProofStep given to the constructor  */
+  buildStartingPairsForMGUAlgorithm() {
+    this.addStartingPairsForMGUAlgorithmForEHyps();
+    if (this.uProofStep.parseNode != void 0)
+      this.addStartingPairsForMGUAlgorithmForParseNode(this.uProofStep.parseNode, this.assertion.parseNode);
+    return this.startingPairsForMGUFinder;
+  }
+  //#endregion buildStartingPairsForMGUAlgorithm
+};
+
+// yamma/server/src/mmp/WorkingVarsUnifierFinder.ts
+var WorkingVarsUnifierFinder = class {
+  // alreadyReplacedWorkingVars: Set<string>;
+  constructor(startingOrderedPairsOfNodes) {
+    this.workingVarsForWhichRule5hasAlreadyBeenApplied = /* @__PURE__ */ new Set();
+    this.currentOrderedPairsOfNodes = startingOrderedPairsOfNodes;
+    this.mostGeneralUnifierResult = /* @__PURE__ */ new Map();
+  }
+  //#region findMostGeneralUnifier
+  //#region runACycle
+  //#region tryToPerformAnActionForCurrentPair
+  isInternalNodeForVariable(parseNode) {
+    const result = GrammarManager.isInternalParseNodeForWorkingVar(parseNode);
+    return result;
+  }
+  //#region applyRule1
+  buildOrderedPairsForChildren(node1, node2) {
+    const orderedPairsForChildren = [];
+    for (let i = 0; i < node1.parseNodes.length; i++) {
+      if (node1.parseNodes[i] instanceof InternalNode) {
+        const orderedPair = {
+          parseNode1: node1.parseNodes[i],
+          parseNode2: node2.parseNodes[i]
+        };
+        orderedPairsForChildren.push(orderedPair);
+      }
+    }
+    return orderedPairsForChildren;
+  }
+  applyRule1(i, node1, node2) {
+    const orderedPairsForChildren = this.buildOrderedPairsForChildren(node1, node2);
+    this.currentOrderedPairsOfNodes.splice(i, 1, ...orderedPairsForChildren);
+  }
+  //#endregion applyRule1
+  //#region  applyRule5
+  replaceNodeInDescendants(workingVarToBeReplaced, replacingNode, nodeToBeReplaced) {
+    for (let i = 0; i < nodeToBeReplaced.parseNodes.length; i++) {
+      const descendant = nodeToBeReplaced.parseNodes[i];
+      if (GrammarManager.isInternalParseNodeForWorkingVar(descendant) && GrammarManager.getTokenValueFromInternalNode(descendant) == workingVarToBeReplaced)
+        nodeToBeReplaced.parseNodes.splice(i, 1, replacingNode);
+      else if (descendant instanceof InternalNode)
+        this.replaceNodeInDescendants(workingVarToBeReplaced, replacingNode, descendant);
+    }
+  }
+  applyRule5(i, node1, node2) {
+    const workingVarToBeReplaced = GrammarManager.getTokenValueFromInternalNode(node1);
+    for (let j = 0; j < this.currentOrderedPairsOfNodes.length; j++) {
+      if (j != i)
+        this.replaceNodeInDescendants(workingVarToBeReplaced, node2, this.currentOrderedPairsOfNodes[j].parseNode1);
+      this.replaceNodeInDescendants(workingVarToBeReplaced, node2, this.currentOrderedPairsOfNodes[j].parseNode2);
+    }
+    this.workingVarsForWhichRule5hasAlreadyBeenApplied.add(workingVarToBeReplaced);
+  }
+  //#endregion applyRule5
+  tryToPerformAnActionForCurrentPair(i) {
+    const orderedPair = this.currentOrderedPairsOfNodes[i];
+    const parseNode1 = orderedPair.parseNode1;
+    const parseNode2 = orderedPair.parseNode2;
+    const isParseNode1WorkingVar = this.isInternalNodeForVariable(parseNode1);
+    const isParseNode2WorkingVar = this.isInternalNodeForVariable(parseNode2);
+    let hasBeenPerformedOneAction = false;
+    if (!isParseNode1WorkingVar && !isParseNode2WorkingVar && parseNode1.label == parseNode2.label) {
+      this.applyRule1(i, parseNode1, parseNode2);
+      hasBeenPerformedOneAction = true;
+    } else if (!isParseNode1WorkingVar && !isParseNode2WorkingVar && parseNode1.label != parseNode2.label) {
+      this.currentState = "clashFailure" /* clashFailure */;
+      this.clashFailureOrderedPair = { parseNode1, parseNode2 };
+      hasBeenPerformedOneAction = true;
+    } else if (GrammarManager.areParseNodesEqual(parseNode1, parseNode2)) {
+      this.currentOrderedPairsOfNodes.splice(i, 1);
+      hasBeenPerformedOneAction = true;
+    } else if (!isParseNode1WorkingVar && isParseNode2WorkingVar) {
+      this.currentOrderedPairsOfNodes[i].parseNode1 = parseNode2;
+      this.currentOrderedPairsOfNodes[i].parseNode2 = parseNode1;
+      hasBeenPerformedOneAction = true;
+    } else if (isParseNode1WorkingVar && !this.workingVarsForWhichRule5hasAlreadyBeenApplied.has(GrammarManager.getTokenValueFromInternalNode(parseNode1)) && !parseNode2.containsTokenValue(GrammarManager.getTokenValueFromInternalNode(parseNode1))) {
+      this.applyRule5(i, parseNode1, parseNode2);
+      hasBeenPerformedOneAction = true;
+    } else if (isParseNode1WorkingVar && // this.mostGeneralUnifierResult.get(GrammarManager.getTokenValueFromInternalNode(parseNode1)) == undefined &&
+    parseNode2.containsTokenValue(GrammarManager.getTokenValueFromInternalNode(parseNode1))) {
+      this.currentState = "occourCheckFailure" /* occourCheckFailure */;
+      this.occourCheckOrderedPair = { parseNode1, parseNode2 };
+      hasBeenPerformedOneAction = true;
+    }
+    return hasBeenPerformedOneAction;
+  }
+  //#endregion tryToPerformAnActionForCurrentPair
+  runUnificationCycles() {
+    this.currentState = "running" /* running */;
+    let i = 0;
+    while (i < this.currentOrderedPairsOfNodes.length && this.currentState == "running" /* running */) {
+      const hasBeenPerformedOneAction = this.tryToPerformAnActionForCurrentPair(i);
+      if (hasBeenPerformedOneAction)
+        i = 0;
+      else
+        i++;
+    }
+    if (this.currentState == "running" /* running */)
+      this.currentState = "complete" /* complete */;
+  }
+  //#endregion runACycle
+  /**
+   * 
+   * @returns the most general unifier for the UProof
+   */
+  findMostGeneralUnifier() {
+    let result;
+    this.runUnificationCycles();
+    if (this.currentState == "complete" /* complete */) {
+      this.currentOrderedPairsOfNodes.forEach((orderedPair) => {
+        const workingVar = GrammarManager.getTokenValueFromInternalNode(orderedPair.parseNode1);
+        const substitution = orderedPair.parseNode2;
+        this.mostGeneralUnifierResult.set(workingVar, substitution);
+      });
+      result = this.mostGeneralUnifierResult;
+    }
+    return result;
+  }
+  //#endregion findMostGeneralUnifier
+  static buildErrorMessageForOccourCheckOrderedPair(occourCheckOrderedPair) {
+    const workingVar = GrammarManager.getTokenValueFromInternalNode(occourCheckOrderedPair.parseNode1);
+    const strParseNode2 = GrammarManager.buildStringFormula(occourCheckOrderedPair.parseNode2);
+    const errorMessage = `Working Var unification error: the  working var ${workingVar} should be replaced with the following subformula, containing itself ${strParseNode2}`;
+    return errorMessage;
+  }
+};
+
+// yamma/server/src/mmp/MmpSubstitutionBuilder.ts
+var MmpSubstitutionBuilder = class {
+  constructor(uProofStep, assertion, outermostBlock, workingVars, grammar, diagnostics, requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar) {
+    this.uProofStep = uProofStep;
+    this.assertion = assertion;
+    this.outermostBlock = outermostBlock;
+    this.workingVars = workingVars;
+    this.grammar = grammar;
+    this.diagnostics = diagnostics;
+    this.logicalSystemEHyps = this.assertion.frame?.eHyps;
+    this.eHypUSteps = this.uProofStep.eHypUSteps;
+    if (requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar != void 0)
+      this.requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar = requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar;
+    else
+      this.requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar = false;
+  }
+  //#region buildSubstitution
+  //#region buildSubstitutionForBothInternalNode
+  //#region buildSubstitutionForSingleFormula
+  isSameKind(logicalSystemVariable, uStepParseNode) {
+    let isSameKind;
+    const variableKind = this.outermostBlock.varToKindMap.get(logicalSystemVariable);
+    if (uStepParseNode instanceof MmToken) {
+      const uStepVariableKind = this.outermostBlock.varToKindMap.get(uStepParseNode.value);
+      isSameKind = variableKind == uStepVariableKind;
+    } else
+      isSameKind = variableKind == uStepParseNode.kind;
+    return isSameKind;
+  }
+  addSubstitutionOrCheckCoherence(logicalSystemVariable, uStepParseNode, substitution) {
+    const currentSubstitution = substitution.get(logicalSystemVariable);
+    const isInternalParseNodeForWorkingVar = currentSubstitution instanceof InternalNode && GrammarManager.isInternalParseNodeForWorkingVar(currentSubstitution);
+    if (isInternalParseNodeForWorkingVar)
+      substitution.delete(logicalSystemVariable);
+    let isCoherentSubstitution;
+    if (currentSubstitution === void 0 || isInternalParseNodeForWorkingVar) {
+      isCoherentSubstitution = true;
+      substitution.set(logicalSystemVariable, uStepParseNode);
+    } else
+      isCoherentSubstitution = GrammarManager.areParseNodesCoherent(currentSubstitution, uStepParseNode);
+    return isCoherentSubstitution;
+  }
+  buildSubstitutionForLeafNodeWithInternalNode(logicalSystemFormulaToken, uStepParseNode, substitution) {
+    let hasFoundSubstitution = false;
+    if (this.outermostBlock.v.has(logicalSystemFormulaToken.value)) {
+      if (this.isSameKind(logicalSystemFormulaToken.value, uStepParseNode))
+        hasFoundSubstitution = this.addSubstitutionOrCheckCoherence(
+          logicalSystemFormulaToken.value,
+          uStepParseNode,
+          substitution
+        );
+      else
+        hasFoundSubstitution = false;
+    } else
+      hasFoundSubstitution = uStepParseNode.parseNodes.length == 1 && uStepParseNode.parseNodes[0] instanceof MmToken && logicalSystemFormulaToken.value == uStepParseNode.parseNodes[0].value;
+    return hasFoundSubstitution;
+  }
+  buildSubstitutionForLeafNode(logicalSystemFormulaToken, uStepParseNode, substitution) {
+    let hasFoundSubstitution;
+    if (uStepParseNode instanceof InternalNode)
+      hasFoundSubstitution = this.buildSubstitutionForLeafNodeWithInternalNode(
+        logicalSystemFormulaToken,
+        uStepParseNode,
+        substitution
+      );
+    else
+      hasFoundSubstitution = uStepParseNode instanceof MmToken && logicalSystemFormulaToken.value == uStepParseNode.value;
+    return hasFoundSubstitution;
+  }
+  //#region buildSubstitutionForInternalNode
+  isInternalNodeForLogicalVariableNotAddedToSubstitutionYet(logicalSystemFormulaInternalNode, substitution) {
+    const result = logicalSystemFormulaInternalNode.parseNodes.length == 1 && logicalSystemFormulaInternalNode.parseNodes[0] instanceof MmToken && this.outermostBlock.v.has(logicalSystemFormulaInternalNode.parseNodes[0].value) && substitution.get(logicalSystemFormulaInternalNode.parseNodes[0].value) == void 0;
+    return result;
+  }
+  //#region buildSubstitutionForWorkingVarOfTheSameKind
+  buildExactSubstitutionForWorkingVar(logicalSystemFormulaInternalNode, uStepInternalNode, substitution) {
+    let hasFoundSubstitution;
+    if (GrammarManager.isInternalParseNodeForFHyp(logicalSystemFormulaInternalNode, this.outermostBlock.v)) {
+      const logicalVar = GrammarManager.getTokenValueFromInternalNode(logicalSystemFormulaInternalNode);
+      const logicalVarSubstitution = substitution.get(logicalVar);
+      hasFoundSubstitution = GrammarManager.areParseNodesEqual(logicalVarSubstitution, uStepInternalNode);
+    } else
+      hasFoundSubstitution = false;
+    return hasFoundSubstitution;
+  }
+  buildSubstitutionForWorkingVarOfTheSameKind(logicalSystemFormulaInternalNode, uStepInternalNode, substitution) {
+    let hasFoundSubstitution = true;
+    if (this.isInternalNodeForLogicalVariableNotAddedToSubstitutionYet(
+      logicalSystemFormulaInternalNode,
+      substitution
+    ))
+      substitution.set(logicalSystemFormulaInternalNode.parseNodes[0].value, uStepInternalNode);
+    else if (this.requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar)
+      hasFoundSubstitution = this.buildExactSubstitutionForWorkingVar(
+        logicalSystemFormulaInternalNode,
+        uStepInternalNode,
+        substitution
+      );
+    return hasFoundSubstitution;
+  }
+  //#endregion buildSubstitutionForWorkingVarOfTheSameKind
+  buildSubstitutionForChildren(logicalSystemParseNodes, uStepParseNodes, substitution) {
+    let hasFoundSubstitution = true;
+    let i = 0;
+    while (hasFoundSubstitution && i < logicalSystemParseNodes.length) {
+      hasFoundSubstitution &&= this.buildSubstitutionForParseNode(
+        logicalSystemParseNodes[i],
+        uStepParseNodes[i],
+        substitution
+      );
+      i++;
+    }
+    return hasFoundSubstitution;
+  }
+  buildSubstitutionForInternalNodesOfTheSameKindNoWorkingVar(logicalSystemFormulaInternalNode, uStepInternalNode, substitution) {
+    let hasFoundSubstitution;
+    if (logicalSystemFormulaInternalNode.parseNodes.length === 1 && logicalSystemFormulaInternalNode.parseNodes[0] instanceof MmToken)
+      hasFoundSubstitution = this.buildSubstitutionForLeafNodeWithInternalNode(
+        logicalSystemFormulaInternalNode.parseNodes[0],
+        uStepInternalNode,
+        substitution
+      );
+    else if (logicalSystemFormulaInternalNode.parseNodes.length != uStepInternalNode.parseNodes.length)
+      hasFoundSubstitution = false;
+    else {
+      hasFoundSubstitution = this.buildSubstitutionForChildren(
+        logicalSystemFormulaInternalNode.parseNodes,
+        uStepInternalNode.parseNodes,
+        substitution
+      );
+    }
+    return hasFoundSubstitution;
+  }
+  buildSubstitutionForBothInternalNode(logicalSystemFormulaInternalNode, uStepInternalNode, substitution) {
+    let hasFoundSubstitution;
+    if (logicalSystemFormulaInternalNode.kind != uStepInternalNode.kind)
+      hasFoundSubstitution = false;
+    else if (GrammarManager.isInternalParseNodeForWorkingVar(uStepInternalNode))
+      hasFoundSubstitution = this.buildSubstitutionForWorkingVarOfTheSameKind(
+        logicalSystemFormulaInternalNode,
+        uStepInternalNode,
+        substitution
+      );
+    else
+      hasFoundSubstitution = this.buildSubstitutionForInternalNodesOfTheSameKindNoWorkingVar(
+        logicalSystemFormulaInternalNode,
+        uStepInternalNode,
+        substitution
+      );
+    return hasFoundSubstitution;
+  }
+  //#endregion buildSubstitutionForBothInternalNode
+  buildSubstitutionForInternalNode(logicalSystemFormulaInternalNode, uStepParseNode, substitution) {
+    let hasFoundSubstitution;
+    if (uStepParseNode instanceof MmToken)
+      hasFoundSubstitution = false;
+    else
+      hasFoundSubstitution = this.buildSubstitutionForBothInternalNode(
+        logicalSystemFormulaInternalNode,
+        uStepParseNode,
+        substitution
+      );
+    return hasFoundSubstitution;
+  }
+  //#endregion buildSubstitutionForInternalNode
+  buildSubstitutionForParseNode(parseNodeForLogicalSystemFormula, uStepParseNode, substitution) {
+    let hasFoundSubstitution;
+    if (parseNodeForLogicalSystemFormula instanceof MmToken) {
+      hasFoundSubstitution = this.buildSubstitutionForLeafNode(
+        parseNodeForLogicalSystemFormula,
+        uStepParseNode,
+        substitution
+      );
+    } else
+      hasFoundSubstitution = this.buildSubstitutionForInternalNode(
+        parseNodeForLogicalSystemFormula,
+        uStepParseNode,
+        substitution
+      );
+    return hasFoundSubstitution;
+  }
+  //#endregion buildSubstitutionForSingleFormula
+  buildSubstitutionForSingleLine(logicalSystemFormulaInternalNode, uStepFormula, uStepParseNode, substitution) {
+    let foundSubstitution = true;
+    if (uStepFormula != void 0 && uStepParseNode == void 0)
+      foundSubstitution = false;
+    else if (uStepParseNode != void 0)
+      foundSubstitution = this.buildSubstitutionForInternalNode(
+        logicalSystemFormulaInternalNode,
+        uStepParseNode,
+        substitution
+      );
+    return foundSubstitution;
+  }
+  // it is assumed to be eHypUSteps.length  <= logicalSystemEHyps.length and the missing
+  // refs are assumed to be at the end
+  addSubstitutionForEHypsMoreOrEqual(substitution) {
+    let hasFoundSubstitution = true;
+    let i = 0;
+    while (hasFoundSubstitution && i < this.logicalSystemEHyps.length) {
+      if (i < this.eHypUSteps.length && this.eHypUSteps[i] !== void 0)
+        hasFoundSubstitution = this.buildSubstitutionForSingleLine(
+          this.logicalSystemEHyps[i].parseNode,
+          this.eHypUSteps[i].stepFormula,
+          this.eHypUSteps[i].parseNode,
+          substitution
+        );
+      i++;
+    }
+    return hasFoundSubstitution;
+  }
+  // if logicalSystemEHyps.length < eHypUSteps.length no substitution can be found.
+  // if eHypUSteps.length  <= logicalSystemEHyps.length, the missing
+  // refs are assumed to be at the end
+  buildSubstitutionForEHyps(substitution) {
+    let hasFoundSubstitution;
+    if (this.logicalSystemEHyps.length < this.eHypUSteps.length)
+      hasFoundSubstitution = false;
+    else
+      hasFoundSubstitution = this.addSubstitutionForEHypsMoreOrEqual(substitution);
+    return hasFoundSubstitution;
+  }
+  //#endregion buildSubstitutionForEHyps
+  //#region tryToUnifyWorkingVars
+  //#region addDiagnosticsForWorkingVarsIfTheCase
+  addDiagnosticsForWorkingVar(strWorkingVar, parseNode, message) {
+    if (parseNode instanceof MmToken && parseNode.value == strWorkingVar)
+      MmpValidator.addDiagnosticError(
+        message,
+        parseNode.range,
+        "workingVarUnificationError" /* workingVarUnificationError */,
+        this.diagnostics
+      );
+    else if (parseNode instanceof InternalNode)
+      parseNode.parseNodes.forEach((childNode) => {
+        this.addDiagnosticsForWorkingVar(strWorkingVar, childNode, message);
+      });
+  }
+  addDiagnosticsForWorkingVarsIfTheCase(workingVarsUnifierFinder) {
+    if (workingVarsUnifierFinder.currentState == "occourCheckFailure" /* occourCheckFailure */) {
+      const occourCheckOrderedPair = workingVarsUnifierFinder.occourCheckOrderedPair;
+      const parseNode1 = workingVarsUnifierFinder.occourCheckOrderedPair.parseNode1;
+      const parseNode2 = workingVarsUnifierFinder.occourCheckOrderedPair.parseNode2;
+      const message = WorkingVarsUnifierFinder.buildErrorMessageForOccourCheckOrderedPair(
+        occourCheckOrderedPair
+      );
+      MmpValidator.addDiagnosticError(
+        message,
+        this.uProofStep.stepLabelToken.range,
+        "unificationError" /* unificationError */,
+        this.diagnostics
+      );
+      const strWorkingVar = GrammarManager.getTokenValueFromInternalNode(
+        occourCheckOrderedPair.parseNode1
+      );
+      this.addDiagnosticsForWorkingVar(strWorkingVar, parseNode1, message);
+      this.addDiagnosticsForWorkingVar(strWorkingVar, parseNode2, message);
+    }
+  }
+  //#endregion addDiagnosticsForWorkingVarsIfTheCase
+  tryToUnifyWorkingVars(substitution) {
+    const workingVarsUnifierInitializer = new WorkingVarsUnifierInitializer(
+      this.uProofStep,
+      this.assertion,
+      substitution,
+      this.outermostBlock,
+      this.grammar
+    );
+    const startingPairsForMGUAlgorthm = workingVarsUnifierInitializer.buildStartingPairsForMGUAlgorithm();
+    const workingVarsUnifierFinder = new WorkingVarsUnifierFinder(startingPairsForMGUAlgorthm);
+    workingVarsUnifierFinder.findMostGeneralUnifier();
+    const result = workingVarsUnifierFinder.currentState == "complete" /* complete */;
+    this.addDiagnosticsForWorkingVarsIfTheCase(workingVarsUnifierFinder);
+    return result;
+  }
+  //#endregion tryToUnifyWorkingVars
+  buildSubstitutionForExistingParseNodes() {
+    const substitution = /* @__PURE__ */ new Map();
+    let hasBeenFound = this.buildSubstitutionForEHyps(substitution);
+    if (hasBeenFound && this.assertion.parseNode)
+      hasBeenFound = this.buildSubstitutionForSingleLine(
+        this.assertion.parseNode,
+        this.uProofStep.stepFormula,
+        this.uProofStep.parseNode,
+        substitution
+      );
+    return { hasBeenFound, substitution };
+  }
+  //#region addWorkingVarsForVarsWithoutASubstitution
+  //#region addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode
+  addWorkingVarsForLogicalVarsWithoutASubstitutionForUndefinedInternalNode(logicalSystemFormulaInternalNode, substitution) {
+    if (this.isInternalNodeForLogicalVariableNotAddedToSubstitutionYet(
+      logicalSystemFormulaInternalNode,
+      substitution
+    )) {
+      const variable = GrammarManager.getTokenValueFromInternalNode(logicalSystemFormulaInternalNode);
+      const kind = logicalSystemFormulaInternalNode.kind;
+      const newWorkingVar = this.workingVars.getNewWorkingVar(kind);
+      const tokenType = this.workingVars.tokenTypeFromKind(kind);
+      const parseNode = GrammarManager.createInternalNodeForWorkingVar(
+        newWorkingVar,
+        kind,
+        tokenType
+      );
+      substitution.set(variable, parseNode);
+    }
+    logicalSystemFormulaInternalNode.parseNodes.forEach((parseNode) => {
+      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(parseNode, substitution);
+    });
+  }
+  addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(parseNodeForLogicalSystemFormula, substitution) {
+    if (parseNodeForLogicalSystemFormula instanceof InternalNode)
+      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForUndefinedInternalNode(
+        parseNodeForLogicalSystemFormula,
+        substitution
+      );
+  }
+  //#endregion addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode
+  addWorkingVarsForLogicalVarsWithoutASubstitution(substitution) {
+    for (let i = 0; i < this.logicalSystemEHyps.length; i++) {
+      const eHyp = this.logicalSystemEHyps[i];
+      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(eHyp.parseNode, substitution);
+    }
+    this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(this.assertion.parseNode, substitution);
+  }
+  //#endregion addWorkingVarsForVarsWithoutASubstitution
+  /**
+   * tries to find substitution for the uProofStep given in the constructor. If the uProofStep can be unified
+   * with the given logical assertion, a substitution is returned and it is complete (all logical vars
+   * have a substitution; some logical vars may be substituted with a Working Var)
+   * @returns 
+   */
+  buildSubstitution() {
+    const substitutionResult = this.buildSubstitutionForExistingParseNodes();
+    if (substitutionResult.hasBeenFound) {
+      this.addWorkingVarsForLogicalVarsWithoutASubstitution(substitutionResult.substitution);
+      if (!this.requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar)
+        substitutionResult.hasBeenFound = this.tryToUnifyWorkingVars(substitutionResult.substitution);
+    }
+    return substitutionResult;
+  }
+  //#endregion buildSubstitution
+  //#region buildACompleteSubstitutionEvenIfNonUnifiable
+  buildCompleteSubstitutionForExistingParseNodes(substitution, nonUnifiableLogicalParseNodes) {
+    for (let i = 0; i < this.logicalSystemEHyps.length; i++) {
+      if (this.eHypUSteps[i] !== void 0 && this.eHypUSteps[i].parseNode != void 0) {
+        const hasFoundSubstitution = this.buildSubstitutionForInternalNode(
+          this.logicalSystemEHyps[i].parseNode,
+          this.eHypUSteps[i].parseNode,
+          substitution
+        );
+        if (!hasFoundSubstitution)
+          nonUnifiableLogicalParseNodes.push(this.logicalSystemEHyps[i].parseNode);
+      }
+    }
+    if (this.uProofStep.parseNode != void 0 && this.assertion.parseNode) {
+      const hasFoundSubstitution = this.buildSubstitutionForInternalNode(
+        this.assertion.parseNode,
+        this.uProofStep.parseNode,
+        substitution
+      );
+      if (!hasFoundSubstitution)
+        nonUnifiableLogicalParseNodes.push(this.assertion.parseNode);
+    }
+    return substitution;
+  }
+  addWorkingVarsForLogicalVarsWithoutASubstitutionUsingNonUnifiableSteps(substitution, nonUnifiableLogicalParseNodes) {
+    for (let i = 0; i < this.logicalSystemEHyps.length; i++) {
+      const eHyp = this.logicalSystemEHyps[i];
+      if (this.eHypUSteps[i]?.parseNode == void 0 && eHyp.parseNode)
+        this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(eHyp.parseNode, substitution);
+    }
+    if (this.uProofStep.parseNode === void 0 && this.assertion.parseNode)
+      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(this.assertion.parseNode, substitution);
+    nonUnifiableLogicalParseNodes.forEach((nonUnifiableLogicalParseNode) => {
+      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(nonUnifiableLogicalParseNode, substitution);
+    });
+  }
+  /**
+   * returns a substitution for the uProofStep given in the constructor. It will return a substitution
+   * even if the uProofStep cannot be unified. The substitution returned is complete (all logical vars
+   * have a substitution; some logical vars may be substituted with a Working Var).
+   * This method can be invoked the best possible Diagnostic, when a unification error is encountered.
+   */
+  buildACompleteSubstitutionEvenIfNonUnifiable() {
+    const substitution = /* @__PURE__ */ new Map();
+    const nonUnifiableLogicalParseNodes = [];
+    this.buildCompleteSubstitutionForExistingParseNodes(substitution, nonUnifiableLogicalParseNodes);
+    this.addWorkingVarsForLogicalVarsWithoutASubstitutionUsingNonUnifiableSteps(
+      substitution,
+      nonUnifiableLogicalParseNodes
+    );
+    return substitution;
+  }
+  //#endregion buildACompleteSubstitutionEvenIfNonUnifiable
+};
+
+// yamma/server/src/mmp/WorkingVarsUUnifierApplier.ts
+var WorkingVarsUnifierApplier = class {
+  constructor(unifier, uProof, formulaToParseNodeCache) {
+    this.formulaToParseNodeCache = formulaToParseNodeCache;
+    this.unifier = unifier;
+    this.uProof = uProof;
+  }
+  //#region applyUnifier
+  //#region applyUnifierToProofStep
+  //#region applyUnifierToSingleNode
+  invalidateParseNodeCache(mmpProofStep) {
+    if (this.formulaToParseNodeCache != void 0 && mmpProofStep.formula != void 0) {
+      const stepFormulaString = concatTokenValuesWithSpaces(mmpProofStep.formula);
+      this.formulaToParseNodeCache.invalidate(stepFormulaString);
+    }
+  }
+  applyUnifierToSingleInternalNode(parseNode) {
+    let isParseNodeChanged = false;
+    for (let i = 0; i < parseNode.parseNodes.length; i++) {
+      const child = parseNode.parseNodes[i];
+      if (GrammarManager.isInternalParseNodeForWorkingVar(child)) {
+        const workingVar = GrammarManager.getTokenValueFromInternalNode(child);
+        const substitutionForWorkingVar = this.unifier.get(workingVar);
+        if (substitutionForWorkingVar != void 0) {
+          parseNode.parseNodes.splice(i, 1, substitutionForWorkingVar);
+          isParseNodeChanged = true;
+        }
+      } else if (child instanceof InternalNode) {
+        const isChildChanged = this.applyUnifierToSingleInternalNode(child);
+        isParseNodeChanged ||= isChildChanged;
+      }
+    }
+    return isParseNodeChanged;
+  }
+  // applyUnifierToSingleNode(parseNode: InternalNode | undefined): boolean {
+  // 	let isParseNodeChanged = false;
+  // 	if (parseNode instanceof InternalNode)
+  // 		isParseNodeChanged = this.applyUnifierToSingleInternalNode(parseNode);
+  // 	return isParseNodeChanged;
+  // }
+  //#endregion applyUnifierToSingleNode
+  applyUnifierToSubstitution(mmpProofStep) {
+    mmpProofStep.substitution?.forEach((internalNode, logicalVar) => {
+      if (GrammarManager.isInternalParseNodeForWorkingVar(internalNode)) {
+        const workingVar = GrammarManager.getTokenValueFromInternalNode(internalNode);
+        const substitutionForWorkingVar = this.unifier.get(workingVar);
+        if (substitutionForWorkingVar != void 0)
+          mmpProofStep.substitution?.set(logicalVar, substitutionForWorkingVar);
+      } else
+        this.applyUnifierToSingleInternalNode(internalNode);
+    });
+  }
+  rebuildSubstitution(mmpProofStep) {
+    if (mmpProofStep.assertion != void 0) {
+      const uSubstitutionBuilder = new MmpSubstitutionBuilder(
+        mmpProofStep,
+        mmpProofStep.assertion,
+        mmpProofStep.mmpProof.outermostBlock,
+        mmpProofStep.mmpProof.workingVars,
+        mmpProofStep.mmpProof.outermostBlock.grammar,
+        []
+      );
+      const substitutionResult = uSubstitutionBuilder.buildSubstitution();
+      if (substitutionResult.hasBeenFound)
+        mmpProofStep.substitution = substitutionResult.substitution;
+    }
+  }
+  applyUnifierToProofStep(mmpProofStep) {
+    if (mmpProofStep.parseNode != void 0) {
+      const isParseNodeChanged = this.applyUnifierToSingleInternalNode(mmpProofStep.parseNode);
+      if (isParseNodeChanged) {
+        this.invalidateParseNodeCache(mmpProofStep);
+      }
+    }
+    this.rebuildSubstitution(mmpProofStep);
+  }
+  //#endregion applyUnifierToProofStep
+  /**
+   * applies the unifier in every step of this.uProof;
+   * at the end of the method, this.uProof will have all working vars
+   * replaced by the given unifier
+   */
+  applyUnifier() {
+    this.uProof.mmpStatements.forEach((uStatement) => {
+      if (uStatement instanceof MmpProofStep)
+        this.applyUnifierToProofStep(uStatement);
+    });
+  }
+  //#endregion applyUnifier
+};
+
+// yamma/server/src/mmp/WorkingVarReplacerForCompleteProof.ts
+var WorkingVarReplacerForCompleteProof = class {
+  constructor(uProof) {
+    this.uProof = uProof;
+  }
+  /**
+   * Recursive method that traverses the parse node and adds any working var found to the set
+   * @param parseNode the parse node to traverse
+   * @param workingVars the set of working vars to update
+   */
+  gatherWorkingVars(parseNode, workingVars) {
+    parseNode.parseNodes.forEach((child) => {
+      if (GrammarManager.isInternalParseNodeForWorkingVar(child)) {
+        const workingVar = GrammarManager.getTokenValueFromInternalNode(child);
+        let internalNodes = workingVars.get(workingVar);
+        if (internalNodes == void 0) {
+          internalNodes = [];
+          workingVars.set(workingVar, internalNodes);
+        }
+        internalNodes.push(child);
+      } else if (child instanceof InternalNode)
+        this.gatherWorkingVars(child, workingVars);
+    });
+  }
+  /**
+   * Returns the set of working vars present in the proof
+   */
+  getWorkingVars() {
+    const workingVars = /* @__PURE__ */ new Map();
+    this.uProof.mmpStatements.forEach((mmpStatement) => {
+      if (mmpStatement instanceof MmpProofStep && mmpStatement.parseNode != void 0)
+        this.gatherWorkingVars(mmpStatement.parseNode, workingVars);
+    });
+    return workingVars;
+  }
+  /**
+   * Returns the set of variables present in the proof. This is used to avoid using a variable
+   * that is already present in the proof (even if it is not mandatory)
+   */
+  getVarsPresentInProof() {
+    const usedVars = /* @__PURE__ */ new Set();
+    this.uProof.mmpStatements.forEach((mmpStatement) => {
+      if (mmpStatement instanceof MmpProofStep && mmpStatement.parseNode != void 0) {
+        const varsInStep = mmpStatement.parseNode.symbolsSubsetOf(this.uProof.outermostBlock.v);
+        varsInStep.forEach((v) => usedVars.add(v));
+      }
+    });
+    return usedVars;
+  }
+  /**
+   * Returns a variable of the given kind that is not in the set of used variables
+   * @param kind the kind of the variable to find
+   * @param usedVars the set of used variables
+   */
+  findUnusedVar(kind, usedVars) {
+    const variables = this.uProof.outermostBlock.v;
+    let unusedVar;
+    for (const variable of variables) {
+      if (this.uProof.outermostBlock.kindOf(variable) == kind && !usedVars.has(variable)) {
+        unusedVar = variable;
+        break;
+      }
+    }
+    return unusedVar;
+  }
+  /**
+   * Creates a parse node for the given variable, to be used as a replacement
+   * @param unusedVar the variable to create the node for
+   * @param kind the kind of the variable
+   * @returns the created InternalNode, or undefined if the variable definition cannot be found
+   */
+  createReplacementNode(unusedVar, kind) {
+    const fHyp = this.uProof.outermostBlock.varToFHypMap.get(unusedVar);
+    if (fHyp) {
+      const mmToken = new MmToken(unusedVar, 0, 0, kind);
+      const replacementNode = new InternalNode(fHyp.Label, fHyp.Kind, [mmToken]);
+      return replacementNode;
+    }
+    return void 0;
+  }
+  /**
+   * Builds the map of substitutions from working vars to theory vars
+   * @param workingVars the working variables to replace
+   * @param usedVars the variables currently used in the proof (updated in place)
+   * @returns a map where keys are working vars and values are their replacement nodes
+   */
+  buildUnifier(workingVars, usedVars, diagnostics) {
+    const unifier = /* @__PURE__ */ new Map();
+    workingVars.forEach((internalNodes, workingVar) => {
+      const kind = this.uProof.workingVars.kindOf(workingVar);
+      const unusedVar = this.findUnusedVar(kind, usedVars);
+      if (unusedVar == void 0) {
+        if (diagnostics != void 0) {
+          internalNodes.forEach((internalNode) => {
+            const mmToken = GrammarManager.getTokenFromInternalNode(internalNode);
+            const message = `The proof is complete, but it contains working variables and there are no unused theory variables of kind '${kind}' to replace them.
+Please replace this working variable manually.`;
+            MmpValidator.addDiagnosticWarning(
+              message,
+              mmToken.range,
+              "proofCompleteButWorkingVarsRemainAndNoUnusedTheoryVars" /* proofCompleteButWorkingVarsRemainAndNoUnusedTheoryVars */,
+              diagnostics
+            );
+          });
+        }
+      } else {
+        const replacementNode = this.createReplacementNode(unusedVar, kind);
+        if (replacementNode) {
+          unifier.set(workingVar, replacementNode);
+          usedVars.add(unusedVar);
+        }
+      }
+    });
+    return unifier;
+  }
+  /**
+   * Applies the unification substitution to the proof
+   * @param unifier the substitution map
+   * @param formulaToParseNodeCache optional cache to update
+   */
+  applyUnifier(unifier, formulaToParseNodeCache) {
+    if (unifier.size > 0) {
+      const unifierApplier = new WorkingVarsUnifierApplier(
+        unifier,
+        this.uProof,
+        formulaToParseNodeCache
+      );
+      unifierApplier.applyUnifier();
+    }
+  }
+  /**
+   * Replaces all working vars in the proof with unused variables (in the theory) of the same kind.
+   * This is needed when the proof is complete, but still contains working variables.
+   * @param formulaToParseNodeCache if provided, the cache will be updated with the new formulas
+   */
+  replaceWorkingVarsWithTheoryVars(formulaToParseNodeCache, diagnostics) {
+    const workingVars = this.getWorkingVars();
+    if (workingVars.size > 0) {
+      const usedVars = this.getVarsPresentInProof();
+      const unifier = this.buildUnifier(workingVars, usedVars, diagnostics);
+      this.applyUnifier(unifier, formulaToParseNodeCache);
+    }
+  }
+  /** adds diagnostics for working vars that cannot be replaced by an unused theory variable.
+   * This method is used when the prof is complete, but still contains working variables and
+   * there are no unused theory variables to replace them with.
+   * This method is called both from the MmpUnifier (to check if the proof can be generated) and
+   * from the MmpValidator (to add diagnostics after unification). When called from the MmpUnifier,
+   * the diagnostics are not sent to the editor, but only used to decide if the proof can be generated.
+   * Only when called from the MmpValidator, the diagnostics are actually sent to the editor.
+   */
+  addDiagnosticsForMissingUnusedVars(diagnostics) {
+    const workingVars = this.getWorkingVars();
+    if (workingVars.size > 0) {
+      const usedVars = this.getVarsPresentInProof();
+      this.buildUnifier(workingVars, usedVars, diagnostics);
+    }
+  }
+};
+
 // yamma/server/src/mmp/MmpValidator.ts
 var MmpValidator = class _MmpValidator {
   constructor(mmParser, globalState, diagnosticMessageForSyntaxError) {
@@ -11276,8 +12266,12 @@ var MmpValidator = class _MmpValidator {
     mmpStatistics.buildStatistics();
     this.globalState.mmpStatistics = mmpStatistics;
   }
-  // validateFullDocumentText(textToValidate: string, labelToStatementMap: Map<string, LabeledStatement>,
-  // 	outermostBlock: BlockStatement, grammar: Grammar, workingVars: WorkingVars) {
+  addDiagnosticsForProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars(mmpProof) {
+    if (this.globalState.isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars) {
+      const workingVarReplacerForCompleteProof = new WorkingVarReplacerForCompleteProof(mmpProof);
+      workingVarReplacerForCompleteProof.addDiagnosticsForMissingUnusedVars(this.diagnostics);
+    }
+  }
   validateFullDocumentText(textToValidate, textDocumentUri, mmParser, workingVars) {
     const diagnosticMessageForSyntaxError = this.diagnosticMessageForSyntaxError == ConfigurationManager_default.verbose ? new VerboseDiagnosticMessageForSyntaxError() : new ShortDiagnosticMessageForSyntaxError(
       mmParser.outermostBlock.c,
@@ -11299,6 +12293,7 @@ var MmpValidator = class _MmpValidator {
     console.log("after mmpParser.parse()");
     this.globalState.lastMmpParser = this.mmpParser;
     this.diagnostics = this.mmpParser.diagnostics;
+    this.addDiagnosticsForProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars(this.mmpParser.mmpProof);
     this.updateStatistics(this.mmpParser);
   }
   //#endregionvalidateFullDocumentText
@@ -12654,742 +13649,6 @@ ${uStatementText}
   }
 };
 
-// yamma/server/src/mmp/MmpSubstitutionApplier.ts
-var MmpSubstitutionApplier = class _MmpSubstitutionApplier {
-  constructor(substitution, uStepIndex, uProof, assertion, outermostBlock, workingVars, grammar) {
-    this.substitution = substitution;
-    this.uStepIndex = uStepIndex;
-    this.assertion = assertion;
-    this.outermostBlock = outermostBlock;
-    this.workingVars = workingVars;
-    this.grammar = grammar;
-    this.uProof = uProof;
-    this.uProofStep = this.uProof.mmpStatements[uStepIndex];
-    this.logicalSystemEHyps = this.assertion.frame?.eHyps;
-    this.eHypUSteps = this.uProofStep.eHypUSteps;
-  }
-  //#region createParseNode
-  //TODO this one is probably to be removed, it's called nowhere
-  static createParseNodeForMmToken(parseNodeForLogicalSystemFormula, substitution) {
-    const symbol = parseNodeForLogicalSystemFormula.value;
-    let newParseNode = substitution.get(symbol);
-    if (newParseNode === void 0) {
-      newParseNode = new MmToken(symbol, 0, 0);
-    }
-    return newParseNode;
-  }
-  static isInternalNodeForLogicalVariable(parseNodeForLogicalSystemFormula, outermostBlock) {
-    const result = parseNodeForLogicalSystemFormula instanceof InternalNode && parseNodeForLogicalSystemFormula.parseNodes.length === 1 && parseNodeForLogicalSystemFormula.parseNodes[0] instanceof MmToken && outermostBlock.v.has(parseNodeForLogicalSystemFormula.parseNodes[0].value);
-    return result;
-  }
-  static createParseNodeForLogicalVariable(internalNodeForLogicalVariable, substitution) {
-    const symbol = internalNodeForLogicalVariable.parseNodes[0].value;
-    const newParseNode = substitution.get(symbol);
-    if (newParseNode == void 0) {
-      console.log(`Error! The USubstitutionBuilder is trying to build a build a ParseNode, but the given substitution does not contain a substitution value for the logical variable '${symbol}'`);
-      throw new Error(`Error! The USubstitutionBuilder is trying to build a build a ParseNode, but the given substitution does not contain a substitution value for the logical variable '${symbol}'`);
-    }
-    return newParseNode;
-  }
-  static createParseNodeForInternalNode(parseNodeForLogicalSystemFormula, substitution, outermostBlock) {
-    const parseNodes = [];
-    parseNodeForLogicalSystemFormula.parseNodes.forEach((parseNode) => {
-      const newParseNode = _MmpSubstitutionApplier.createParseNode(
-        parseNode,
-        substitution,
-        outermostBlock
-      );
-      parseNodes.push(newParseNode);
-    });
-    const newInternalNode = new InternalNode(
-      parseNodeForLogicalSystemFormula.label,
-      parseNodeForLogicalSystemFormula.kind,
-      parseNodes
-    );
-    return newInternalNode;
-  }
-  static createParseNode(parseNodeForLogicalSystemFormula, substitution, outermostBlock) {
-    let newParseNode;
-    if (_MmpSubstitutionApplier.isInternalNodeForLogicalVariable(
-      parseNodeForLogicalSystemFormula,
-      outermostBlock
-    )) {
-      newParseNode = _MmpSubstitutionApplier.createParseNodeForLogicalVariable(
-        parseNodeForLogicalSystemFormula,
-        substitution
-      );
-    } else if (parseNodeForLogicalSystemFormula instanceof MmToken)
-      newParseNode = _MmpSubstitutionApplier.createParseNodeForMmToken(
-        parseNodeForLogicalSystemFormula,
-        substitution
-      );
-    else
-      newParseNode = _MmpSubstitutionApplier.createParseNodeForInternalNode(
-        parseNodeForLogicalSystemFormula,
-        substitution,
-        outermostBlock
-      );
-    return newParseNode;
-  }
-  //#endregion createParseNode
-  // applise the 
-  // applySubstitutionToExistingNode(parseNode: ParseNode,
-  // 	parseNodeForLogicalSystemFormula: ParseNode): ParseNode {
-  // 	let newParseNode: ParseNode = parseNode;
-  // 	if (parseNode instanceof MmToken && this.workingVars.isWorkingVar(parseNode.value)) {
-  // 		const nodeForSubstitution: ParseNode | undefined = this.substitution.get(parseNode.value);
-  // 		if (nodeForSubstitution != undefined)
-  // 			// parseNode is a working var for which a substitution was found
-  // 			newParseNode = nodeForSubstitution;
-  // 	}
-  // 	return newParseNode;
-  // }
-  applySubstitutionToSingleNode(uProofStep, parseNodeForLogicalSystemFormula) {
-    if (uProofStep.parseNode == void 0)
-      uProofStep.parseNode = _MmpSubstitutionApplier.createParseNodeForInternalNode(
-        parseNodeForLogicalSystemFormula,
-        this.substitution,
-        this.outermostBlock
-      );
-  }
-  //#endregion applySubstitutionToSingleNode
-  //#region applySubstitutionToEHypsAndAddMissingOnes
-  // it is assumed to be eHypUSteps.length  <= logicalSystemEHyps.length and the missing
-  // refs are assumed to be at the end
-  applySubstitutionToEHypsAndAddMissingOnes() {
-    let indexToInsertNewEHyps = this.uStepIndex;
-    for (let i = 0; i < this.logicalSystemEHyps.length; i++) {
-      const logicalSystemEHyp = this.logicalSystemEHyps[i];
-      if (i < this.eHypUSteps.length) {
-        if (this.eHypUSteps[i] === void 0)
-          this.eHypUSteps[i] = this.uProof.createEmptyUStepAndAddItBeforeIndex(indexToInsertNewEHyps++);
-        if (this.eHypUSteps[i].parseNode === void 0)
-          this.eHypUSteps[i].parseNode = _MmpSubstitutionApplier.createParseNodeForInternalNode(
-            logicalSystemEHyp.parseNode,
-            this.substitution,
-            this.outermostBlock
-          );
-      } else {
-        const newEHypUStep = this.uProof.createEmptyUStepAndAddItBeforeIndex(indexToInsertNewEHyps++);
-        newEHypUStep.parseNode = _MmpSubstitutionApplier.createParseNodeForInternalNode(
-          logicalSystemEHyp.parseNode,
-          this.substitution,
-          this.outermostBlock
-        );
-        this.eHypUSteps.push(newEHypUStep);
-      }
-    }
-    return indexToInsertNewEHyps;
-  }
-  //#endregion applySubstitutionToEHypsAndAddMissingOnes
-  /**
-   * Applies a substitution to a single MmpProofStep:
-   * - if the formula is missing, it's added (with working vars)
-   * - if an $e hypothesis is missing, it's added (with working vars)
-   * - new $e hypothesis and the MmpProofStep are added at the end of to the UProof
-   * Returns the new index for the MmpProofStep that was indexed by uStepIndex (this
-   * can be increased, if new hypothesis are added) 
-   */
-  applySubstitution() {
-    const updatedeUStepIndex = this.applySubstitutionToEHypsAndAddMissingOnes();
-    if (this.assertion.parseNode)
-      this.applySubstitutionToSingleNode(this.uProofStep, this.assertion.parseNode);
-    return updatedeUStepIndex;
-  }
-};
-
-// yamma/server/src/mmp/WorkingVarsUnifierInitializer.ts
-var WorkingVarsUnifierInitializer = class {
-  constructor(uProofStep, assertion, substitution, outermostBlock, grammar) {
-    this.startingPairsForMGUFinder = [];
-    this.uProofStep = uProofStep;
-    this.assertion = assertion;
-    this.substitution = substitution;
-    this.outermostBlock = outermostBlock;
-    this.grammar = grammar;
-  }
-  //#region buildStartingPairsForMGUAlgorithm
-  //#region addStartingPairsForMGUAlgorithmForParseNode
-  addStartingPairsForMGUFinderForParseNodeWithLogicalNodeSubstituted(uStepParseNode, newNodeWithSubstitution) {
-    if (GrammarManager.isInternalParseNodeForWorkingVar(uStepParseNode)) {
-      if (!GrammarManager.areParseNodesEqual(uStepParseNode, newNodeWithSubstitution)) {
-        const orderedPairOfNodes = {
-          parseNode1: uStepParseNode,
-          parseNode2: newNodeWithSubstitution
-        };
-        this.startingPairsForMGUFinder.push(orderedPairOfNodes);
-      }
-    } else if (uStepParseNode instanceof InternalNode)
-      for (let i = 0; i < uStepParseNode.parseNodes.length; i++) {
-        this.addStartingPairsForMGUFinderForParseNodeWithLogicalNodeSubstituted(
-          uStepParseNode.parseNodes[i],
-          newNodeWithSubstitution.parseNodes[i]
-        );
-      }
-  }
-  // addStartingPairsForMGUAlgorithmForParseNode(uStepParseNode: InternalNode, logicalSystemFormulaParseNode: InternalNode) {
-  // 	const newNodeWithSubstitution = USubstitutionApplier.createParseNode(logicalSystemFormulaParseNode,
-  // 		this.substitution, this.outermostBlock);
-  // 	this.addStartingPairsForMGUFinderForParseNodeWithLogicalNodeSubstituted(uStepParseNode, newNodeWithSubstitution);
-  // }
-  addStartingPairsForMGUAlgorithmForParseNode(uStepParseNode, logicalSystemFormulaParseNode) {
-    const newNodeWithSubstitution = MmpSubstitutionApplier.createParseNode(
-      logicalSystemFormulaParseNode,
-      this.substitution,
-      this.outermostBlock
-    );
-    if ((GrammarManager.containsWorkingVar(uStepParseNode) || GrammarManager.containsWorkingVar(newNodeWithSubstitution)) && !GrammarManager.areParseNodesEqual(newNodeWithSubstitution, uStepParseNode)) {
-      const orderedPairOfNodes = {
-        parseNode1: newNodeWithSubstitution,
-        parseNode2: uStepParseNode
-      };
-      this.startingPairsForMGUFinder.push(orderedPairOfNodes);
-    }
-  }
-  //#endregion addStartingPairsForMGUAlgorithmForParseNode
-  addStartingPairsForMGUAlgorithmForEHyps() {
-    for (let i = 0; i < this.uProofStep.eHypUSteps.length; i++) {
-      if (this.uProofStep.eHypUSteps[i] != void 0 && this.uProofStep.eHypUSteps[i]?.parseNode != void 0)
-        this.addStartingPairsForMGUAlgorithmForParseNode(
-          this.uProofStep.eHypUSteps[i]?.parseNode,
-          this.assertion.frame?.eHyps[i].parseNode
-        );
-    }
-  }
-  /** builds the starting pairs for the MGU algorithm, for the MmpProofStep given to the constructor  */
-  buildStartingPairsForMGUAlgorithm() {
-    this.addStartingPairsForMGUAlgorithmForEHyps();
-    if (this.uProofStep.parseNode != void 0)
-      this.addStartingPairsForMGUAlgorithmForParseNode(this.uProofStep.parseNode, this.assertion.parseNode);
-    return this.startingPairsForMGUFinder;
-  }
-  //#endregion buildStartingPairsForMGUAlgorithm
-};
-
-// yamma/server/src/mmp/WorkingVarsUnifierFinder.ts
-var WorkingVarsUnifierFinder = class {
-  // alreadyReplacedWorkingVars: Set<string>;
-  constructor(startingOrderedPairsOfNodes) {
-    this.workingVarsForWhichRule5hasAlreadyBeenApplied = /* @__PURE__ */ new Set();
-    this.currentOrderedPairsOfNodes = startingOrderedPairsOfNodes;
-    this.mostGeneralUnifierResult = /* @__PURE__ */ new Map();
-  }
-  //#region findMostGeneralUnifier
-  //#region runACycle
-  //#region tryToPerformAnActionForCurrentPair
-  isInternalNodeForVariable(parseNode) {
-    const result = GrammarManager.isInternalParseNodeForWorkingVar(parseNode);
-    return result;
-  }
-  //#region applyRule1
-  buildOrderedPairsForChildren(node1, node2) {
-    const orderedPairsForChildren = [];
-    for (let i = 0; i < node1.parseNodes.length; i++) {
-      if (node1.parseNodes[i] instanceof InternalNode) {
-        const orderedPair = {
-          parseNode1: node1.parseNodes[i],
-          parseNode2: node2.parseNodes[i]
-        };
-        orderedPairsForChildren.push(orderedPair);
-      }
-    }
-    return orderedPairsForChildren;
-  }
-  applyRule1(i, node1, node2) {
-    const orderedPairsForChildren = this.buildOrderedPairsForChildren(node1, node2);
-    this.currentOrderedPairsOfNodes.splice(i, 1, ...orderedPairsForChildren);
-  }
-  //#endregion applyRule1
-  //#region  applyRule5
-  replaceNodeInDescendants(workingVarToBeReplaced, replacingNode, nodeToBeReplaced) {
-    for (let i = 0; i < nodeToBeReplaced.parseNodes.length; i++) {
-      const descendant = nodeToBeReplaced.parseNodes[i];
-      if (GrammarManager.isInternalParseNodeForWorkingVar(descendant) && GrammarManager.getTokenValueFromInternalNode(descendant) == workingVarToBeReplaced)
-        nodeToBeReplaced.parseNodes.splice(i, 1, replacingNode);
-      else if (descendant instanceof InternalNode)
-        this.replaceNodeInDescendants(workingVarToBeReplaced, replacingNode, descendant);
-    }
-  }
-  applyRule5(i, node1, node2) {
-    const workingVarToBeReplaced = GrammarManager.getTokenValueFromInternalNode(node1);
-    for (let j = 0; j < this.currentOrderedPairsOfNodes.length; j++) {
-      if (j != i)
-        this.replaceNodeInDescendants(workingVarToBeReplaced, node2, this.currentOrderedPairsOfNodes[j].parseNode1);
-      this.replaceNodeInDescendants(workingVarToBeReplaced, node2, this.currentOrderedPairsOfNodes[j].parseNode2);
-    }
-    this.workingVarsForWhichRule5hasAlreadyBeenApplied.add(workingVarToBeReplaced);
-  }
-  //#endregion applyRule5
-  tryToPerformAnActionForCurrentPair(i) {
-    const orderedPair = this.currentOrderedPairsOfNodes[i];
-    const parseNode1 = orderedPair.parseNode1;
-    const parseNode2 = orderedPair.parseNode2;
-    const isParseNode1WorkingVar = this.isInternalNodeForVariable(parseNode1);
-    const isParseNode2WorkingVar = this.isInternalNodeForVariable(parseNode2);
-    let hasBeenPerformedOneAction = false;
-    if (!isParseNode1WorkingVar && !isParseNode2WorkingVar && parseNode1.label == parseNode2.label) {
-      this.applyRule1(i, parseNode1, parseNode2);
-      hasBeenPerformedOneAction = true;
-    } else if (!isParseNode1WorkingVar && !isParseNode2WorkingVar && parseNode1.label != parseNode2.label) {
-      this.currentState = "clashFailure" /* clashFailure */;
-      this.clashFailureOrderedPair = { parseNode1, parseNode2 };
-      hasBeenPerformedOneAction = true;
-    } else if (GrammarManager.areParseNodesEqual(parseNode1, parseNode2)) {
-      this.currentOrderedPairsOfNodes.splice(i, 1);
-      hasBeenPerformedOneAction = true;
-    } else if (!isParseNode1WorkingVar && isParseNode2WorkingVar) {
-      this.currentOrderedPairsOfNodes[i].parseNode1 = parseNode2;
-      this.currentOrderedPairsOfNodes[i].parseNode2 = parseNode1;
-      hasBeenPerformedOneAction = true;
-    } else if (isParseNode1WorkingVar && !this.workingVarsForWhichRule5hasAlreadyBeenApplied.has(GrammarManager.getTokenValueFromInternalNode(parseNode1)) && !parseNode2.containsTokenValue(GrammarManager.getTokenValueFromInternalNode(parseNode1))) {
-      this.applyRule5(i, parseNode1, parseNode2);
-      hasBeenPerformedOneAction = true;
-    } else if (isParseNode1WorkingVar && // this.mostGeneralUnifierResult.get(GrammarManager.getTokenValueFromInternalNode(parseNode1)) == undefined &&
-    parseNode2.containsTokenValue(GrammarManager.getTokenValueFromInternalNode(parseNode1))) {
-      this.currentState = "occourCheckFailure" /* occourCheckFailure */;
-      this.occourCheckOrderedPair = { parseNode1, parseNode2 };
-      hasBeenPerformedOneAction = true;
-    }
-    return hasBeenPerformedOneAction;
-  }
-  //#endregion tryToPerformAnActionForCurrentPair
-  runUnificationCycles() {
-    this.currentState = "running" /* running */;
-    let i = 0;
-    while (i < this.currentOrderedPairsOfNodes.length && this.currentState == "running" /* running */) {
-      const hasBeenPerformedOneAction = this.tryToPerformAnActionForCurrentPair(i);
-      if (hasBeenPerformedOneAction)
-        i = 0;
-      else
-        i++;
-    }
-    if (this.currentState == "running" /* running */)
-      this.currentState = "complete" /* complete */;
-  }
-  //#endregion runACycle
-  /**
-   * 
-   * @returns the most general unifier for the UProof
-   */
-  findMostGeneralUnifier() {
-    let result;
-    this.runUnificationCycles();
-    if (this.currentState == "complete" /* complete */) {
-      this.currentOrderedPairsOfNodes.forEach((orderedPair) => {
-        const workingVar = GrammarManager.getTokenValueFromInternalNode(orderedPair.parseNode1);
-        const substitution = orderedPair.parseNode2;
-        this.mostGeneralUnifierResult.set(workingVar, substitution);
-      });
-      result = this.mostGeneralUnifierResult;
-    }
-    return result;
-  }
-  //#endregion findMostGeneralUnifier
-  static buildErrorMessageForOccourCheckOrderedPair(occourCheckOrderedPair) {
-    const workingVar = GrammarManager.getTokenValueFromInternalNode(occourCheckOrderedPair.parseNode1);
-    const strParseNode2 = GrammarManager.buildStringFormula(occourCheckOrderedPair.parseNode2);
-    const errorMessage = `Working Var unification error: the  working var ${workingVar} should be replaced with the following subformula, containing itself ${strParseNode2}`;
-    return errorMessage;
-  }
-};
-
-// yamma/server/src/mmp/MmpSubstitutionBuilder.ts
-var MmpSubstitutionBuilder = class {
-  constructor(uProofStep, assertion, outermostBlock, workingVars, grammar, diagnostics, requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar) {
-    this.uProofStep = uProofStep;
-    this.assertion = assertion;
-    this.outermostBlock = outermostBlock;
-    this.workingVars = workingVars;
-    this.grammar = grammar;
-    this.diagnostics = diagnostics;
-    this.logicalSystemEHyps = this.assertion.frame?.eHyps;
-    this.eHypUSteps = this.uProofStep.eHypUSteps;
-    if (requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar != void 0)
-      this.requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar = requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar;
-    else
-      this.requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar = false;
-  }
-  //#region buildSubstitution
-  //#region buildSubstitutionForBothInternalNode
-  //#region buildSubstitutionForSingleFormula
-  isSameKind(logicalSystemVariable, uStepParseNode) {
-    let isSameKind;
-    const variableKind = this.outermostBlock.varToKindMap.get(logicalSystemVariable);
-    if (uStepParseNode instanceof MmToken) {
-      const uStepVariableKind = this.outermostBlock.varToKindMap.get(uStepParseNode.value);
-      isSameKind = variableKind == uStepVariableKind;
-    } else
-      isSameKind = variableKind == uStepParseNode.kind;
-    return isSameKind;
-  }
-  addSubstitutionOrCheckCoherence(logicalSystemVariable, uStepParseNode, substitution) {
-    const currentSubstitution = substitution.get(logicalSystemVariable);
-    const isInternalParseNodeForWorkingVar = currentSubstitution instanceof InternalNode && GrammarManager.isInternalParseNodeForWorkingVar(currentSubstitution);
-    if (isInternalParseNodeForWorkingVar)
-      substitution.delete(logicalSystemVariable);
-    let isCoherentSubstitution;
-    if (currentSubstitution === void 0 || isInternalParseNodeForWorkingVar) {
-      isCoherentSubstitution = true;
-      substitution.set(logicalSystemVariable, uStepParseNode);
-    } else
-      isCoherentSubstitution = GrammarManager.areParseNodesCoherent(currentSubstitution, uStepParseNode);
-    return isCoherentSubstitution;
-  }
-  buildSubstitutionForLeafNodeWithInternalNode(logicalSystemFormulaToken, uStepParseNode, substitution) {
-    let hasFoundSubstitution = false;
-    if (this.outermostBlock.v.has(logicalSystemFormulaToken.value)) {
-      if (this.isSameKind(logicalSystemFormulaToken.value, uStepParseNode))
-        hasFoundSubstitution = this.addSubstitutionOrCheckCoherence(
-          logicalSystemFormulaToken.value,
-          uStepParseNode,
-          substitution
-        );
-      else
-        hasFoundSubstitution = false;
-    } else
-      hasFoundSubstitution = uStepParseNode.parseNodes.length == 1 && uStepParseNode.parseNodes[0] instanceof MmToken && logicalSystemFormulaToken.value == uStepParseNode.parseNodes[0].value;
-    return hasFoundSubstitution;
-  }
-  buildSubstitutionForLeafNode(logicalSystemFormulaToken, uStepParseNode, substitution) {
-    let hasFoundSubstitution;
-    if (uStepParseNode instanceof InternalNode)
-      hasFoundSubstitution = this.buildSubstitutionForLeafNodeWithInternalNode(
-        logicalSystemFormulaToken,
-        uStepParseNode,
-        substitution
-      );
-    else
-      hasFoundSubstitution = uStepParseNode instanceof MmToken && logicalSystemFormulaToken.value == uStepParseNode.value;
-    return hasFoundSubstitution;
-  }
-  //#region buildSubstitutionForInternalNode
-  isInternalNodeForLogicalVariableNotAddedToSubstitutionYet(logicalSystemFormulaInternalNode, substitution) {
-    const result = logicalSystemFormulaInternalNode.parseNodes.length == 1 && logicalSystemFormulaInternalNode.parseNodes[0] instanceof MmToken && this.outermostBlock.v.has(logicalSystemFormulaInternalNode.parseNodes[0].value) && substitution.get(logicalSystemFormulaInternalNode.parseNodes[0].value) == void 0;
-    return result;
-  }
-  //#region buildSubstitutionForWorkingVarOfTheSameKind
-  buildExactSubstitutionForWorkingVar(logicalSystemFormulaInternalNode, uStepInternalNode, substitution) {
-    let hasFoundSubstitution;
-    if (GrammarManager.isInternalParseNodeForFHyp(logicalSystemFormulaInternalNode, this.outermostBlock.v)) {
-      const logicalVar = GrammarManager.getTokenValueFromInternalNode(logicalSystemFormulaInternalNode);
-      const logicalVarSubstitution = substitution.get(logicalVar);
-      hasFoundSubstitution = GrammarManager.areParseNodesEqual(logicalVarSubstitution, uStepInternalNode);
-    } else
-      hasFoundSubstitution = false;
-    return hasFoundSubstitution;
-  }
-  buildSubstitutionForWorkingVarOfTheSameKind(logicalSystemFormulaInternalNode, uStepInternalNode, substitution) {
-    let hasFoundSubstitution = true;
-    if (this.isInternalNodeForLogicalVariableNotAddedToSubstitutionYet(
-      logicalSystemFormulaInternalNode,
-      substitution
-    ))
-      substitution.set(logicalSystemFormulaInternalNode.parseNodes[0].value, uStepInternalNode);
-    else if (this.requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar)
-      hasFoundSubstitution = this.buildExactSubstitutionForWorkingVar(
-        logicalSystemFormulaInternalNode,
-        uStepInternalNode,
-        substitution
-      );
-    return hasFoundSubstitution;
-  }
-  //#endregion buildSubstitutionForWorkingVarOfTheSameKind
-  buildSubstitutionForChildren(logicalSystemParseNodes, uStepParseNodes, substitution) {
-    let hasFoundSubstitution = true;
-    let i = 0;
-    while (hasFoundSubstitution && i < logicalSystemParseNodes.length) {
-      hasFoundSubstitution &&= this.buildSubstitutionForParseNode(
-        logicalSystemParseNodes[i],
-        uStepParseNodes[i],
-        substitution
-      );
-      i++;
-    }
-    return hasFoundSubstitution;
-  }
-  buildSubstitutionForInternalNodesOfTheSameKindNoWorkingVar(logicalSystemFormulaInternalNode, uStepInternalNode, substitution) {
-    let hasFoundSubstitution;
-    if (logicalSystemFormulaInternalNode.parseNodes.length === 1 && logicalSystemFormulaInternalNode.parseNodes[0] instanceof MmToken)
-      hasFoundSubstitution = this.buildSubstitutionForLeafNodeWithInternalNode(
-        logicalSystemFormulaInternalNode.parseNodes[0],
-        uStepInternalNode,
-        substitution
-      );
-    else if (logicalSystemFormulaInternalNode.parseNodes.length != uStepInternalNode.parseNodes.length)
-      hasFoundSubstitution = false;
-    else {
-      hasFoundSubstitution = this.buildSubstitutionForChildren(
-        logicalSystemFormulaInternalNode.parseNodes,
-        uStepInternalNode.parseNodes,
-        substitution
-      );
-    }
-    return hasFoundSubstitution;
-  }
-  buildSubstitutionForBothInternalNode(logicalSystemFormulaInternalNode, uStepInternalNode, substitution) {
-    let hasFoundSubstitution;
-    if (logicalSystemFormulaInternalNode.kind != uStepInternalNode.kind)
-      hasFoundSubstitution = false;
-    else if (GrammarManager.isInternalParseNodeForWorkingVar(uStepInternalNode))
-      hasFoundSubstitution = this.buildSubstitutionForWorkingVarOfTheSameKind(
-        logicalSystemFormulaInternalNode,
-        uStepInternalNode,
-        substitution
-      );
-    else
-      hasFoundSubstitution = this.buildSubstitutionForInternalNodesOfTheSameKindNoWorkingVar(
-        logicalSystemFormulaInternalNode,
-        uStepInternalNode,
-        substitution
-      );
-    return hasFoundSubstitution;
-  }
-  //#endregion buildSubstitutionForBothInternalNode
-  buildSubstitutionForInternalNode(logicalSystemFormulaInternalNode, uStepParseNode, substitution) {
-    let hasFoundSubstitution;
-    if (uStepParseNode instanceof MmToken)
-      hasFoundSubstitution = false;
-    else
-      hasFoundSubstitution = this.buildSubstitutionForBothInternalNode(
-        logicalSystemFormulaInternalNode,
-        uStepParseNode,
-        substitution
-      );
-    return hasFoundSubstitution;
-  }
-  //#endregion buildSubstitutionForInternalNode
-  buildSubstitutionForParseNode(parseNodeForLogicalSystemFormula, uStepParseNode, substitution) {
-    let hasFoundSubstitution;
-    if (parseNodeForLogicalSystemFormula instanceof MmToken) {
-      hasFoundSubstitution = this.buildSubstitutionForLeafNode(
-        parseNodeForLogicalSystemFormula,
-        uStepParseNode,
-        substitution
-      );
-    } else
-      hasFoundSubstitution = this.buildSubstitutionForInternalNode(
-        parseNodeForLogicalSystemFormula,
-        uStepParseNode,
-        substitution
-      );
-    return hasFoundSubstitution;
-  }
-  //#endregion buildSubstitutionForSingleFormula
-  buildSubstitutionForSingleLine(logicalSystemFormulaInternalNode, uStepFormula, uStepParseNode, substitution) {
-    let foundSubstitution = true;
-    if (uStepFormula != void 0 && uStepParseNode == void 0)
-      foundSubstitution = false;
-    else if (uStepParseNode != void 0)
-      foundSubstitution = this.buildSubstitutionForInternalNode(
-        logicalSystemFormulaInternalNode,
-        uStepParseNode,
-        substitution
-      );
-    return foundSubstitution;
-  }
-  // it is assumed to be eHypUSteps.length  <= logicalSystemEHyps.length and the missing
-  // refs are assumed to be at the end
-  addSubstitutionForEHypsMoreOrEqual(substitution) {
-    let hasFoundSubstitution = true;
-    let i = 0;
-    while (hasFoundSubstitution && i < this.logicalSystemEHyps.length) {
-      if (i < this.eHypUSteps.length && this.eHypUSteps[i] !== void 0)
-        hasFoundSubstitution = this.buildSubstitutionForSingleLine(
-          this.logicalSystemEHyps[i].parseNode,
-          this.eHypUSteps[i].stepFormula,
-          this.eHypUSteps[i].parseNode,
-          substitution
-        );
-      i++;
-    }
-    return hasFoundSubstitution;
-  }
-  // if logicalSystemEHyps.length < eHypUSteps.length no substitution can be found.
-  // if eHypUSteps.length  <= logicalSystemEHyps.length, the missing
-  // refs are assumed to be at the end
-  buildSubstitutionForEHyps(substitution) {
-    let hasFoundSubstitution;
-    if (this.logicalSystemEHyps.length < this.eHypUSteps.length)
-      hasFoundSubstitution = false;
-    else
-      hasFoundSubstitution = this.addSubstitutionForEHypsMoreOrEqual(substitution);
-    return hasFoundSubstitution;
-  }
-  //#endregion buildSubstitutionForEHyps
-  //#region tryToUnifyWorkingVars
-  //#region addDiagnosticsForWorkingVarsIfTheCase
-  addDiagnosticsForWorkingVar(strWorkingVar, parseNode, message) {
-    if (parseNode instanceof MmToken && parseNode.value == strWorkingVar)
-      MmpValidator.addDiagnosticError(
-        message,
-        parseNode.range,
-        "workingVarUnificationError" /* workingVarUnificationError */,
-        this.diagnostics
-      );
-    else if (parseNode instanceof InternalNode)
-      parseNode.parseNodes.forEach((childNode) => {
-        this.addDiagnosticsForWorkingVar(strWorkingVar, childNode, message);
-      });
-  }
-  addDiagnosticsForWorkingVarsIfTheCase(workingVarsUnifierFinder) {
-    if (workingVarsUnifierFinder.currentState == "occourCheckFailure" /* occourCheckFailure */) {
-      const occourCheckOrderedPair = workingVarsUnifierFinder.occourCheckOrderedPair;
-      const parseNode1 = workingVarsUnifierFinder.occourCheckOrderedPair.parseNode1;
-      const parseNode2 = workingVarsUnifierFinder.occourCheckOrderedPair.parseNode2;
-      const message = WorkingVarsUnifierFinder.buildErrorMessageForOccourCheckOrderedPair(
-        occourCheckOrderedPair
-      );
-      MmpValidator.addDiagnosticError(
-        message,
-        this.uProofStep.stepLabelToken.range,
-        "unificationError" /* unificationError */,
-        this.diagnostics
-      );
-      const strWorkingVar = GrammarManager.getTokenValueFromInternalNode(
-        occourCheckOrderedPair.parseNode1
-      );
-      this.addDiagnosticsForWorkingVar(strWorkingVar, parseNode1, message);
-      this.addDiagnosticsForWorkingVar(strWorkingVar, parseNode2, message);
-    }
-  }
-  //#endregion addDiagnosticsForWorkingVarsIfTheCase
-  tryToUnifyWorkingVars(substitution) {
-    const workingVarsUnifierInitializer = new WorkingVarsUnifierInitializer(
-      this.uProofStep,
-      this.assertion,
-      substitution,
-      this.outermostBlock,
-      this.grammar
-    );
-    const startingPairsForMGUAlgorthm = workingVarsUnifierInitializer.buildStartingPairsForMGUAlgorithm();
-    const workingVarsUnifierFinder = new WorkingVarsUnifierFinder(startingPairsForMGUAlgorthm);
-    workingVarsUnifierFinder.findMostGeneralUnifier();
-    const result = workingVarsUnifierFinder.currentState == "complete" /* complete */;
-    this.addDiagnosticsForWorkingVarsIfTheCase(workingVarsUnifierFinder);
-    return result;
-  }
-  //#endregion tryToUnifyWorkingVars
-  buildSubstitutionForExistingParseNodes() {
-    const substitution = /* @__PURE__ */ new Map();
-    let hasBeenFound = this.buildSubstitutionForEHyps(substitution);
-    if (hasBeenFound && this.assertion.parseNode)
-      hasBeenFound = this.buildSubstitutionForSingleLine(
-        this.assertion.parseNode,
-        this.uProofStep.stepFormula,
-        this.uProofStep.parseNode,
-        substitution
-      );
-    return { hasBeenFound, substitution };
-  }
-  //#region addWorkingVarsForVarsWithoutASubstitution
-  //#region addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode
-  addWorkingVarsForLogicalVarsWithoutASubstitutionForUndefinedInternalNode(logicalSystemFormulaInternalNode, substitution) {
-    if (this.isInternalNodeForLogicalVariableNotAddedToSubstitutionYet(
-      logicalSystemFormulaInternalNode,
-      substitution
-    )) {
-      const variable = GrammarManager.getTokenValueFromInternalNode(logicalSystemFormulaInternalNode);
-      const kind = logicalSystemFormulaInternalNode.kind;
-      const newWorkingVar = this.workingVars.getNewWorkingVar(kind);
-      const tokenType = this.workingVars.tokenTypeFromKind(kind);
-      const parseNode = GrammarManager.createInternalNodeForWorkingVar(
-        newWorkingVar,
-        kind,
-        tokenType
-      );
-      substitution.set(variable, parseNode);
-    }
-    logicalSystemFormulaInternalNode.parseNodes.forEach((parseNode) => {
-      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(parseNode, substitution);
-    });
-  }
-  addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(parseNodeForLogicalSystemFormula, substitution) {
-    if (parseNodeForLogicalSystemFormula instanceof InternalNode)
-      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForUndefinedInternalNode(
-        parseNodeForLogicalSystemFormula,
-        substitution
-      );
-  }
-  //#endregion addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode
-  addWorkingVarsForLogicalVarsWithoutASubstitution(substitution) {
-    for (let i = 0; i < this.logicalSystemEHyps.length; i++) {
-      const eHyp = this.logicalSystemEHyps[i];
-      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(eHyp.parseNode, substitution);
-    }
-    this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(this.assertion.parseNode, substitution);
-  }
-  //#endregion addWorkingVarsForVarsWithoutASubstitution
-  /**
-   * tries to find substitution for the uProofStep given in the constructor. If the uProofStep can be unified
-   * with the given logical assertion, a substitution is returned and it is complete (all logical vars
-   * have a substitution; some logical vars may be substituted with a Working Var)
-   * @returns 
-   */
-  buildSubstitution() {
-    const substitutionResult = this.buildSubstitutionForExistingParseNodes();
-    if (substitutionResult.hasBeenFound) {
-      this.addWorkingVarsForLogicalVarsWithoutASubstitution(substitutionResult.substitution);
-      if (!this.requireWorkingVarsToBeAnExactSubstitutionOfALogicalVar)
-        substitutionResult.hasBeenFound = this.tryToUnifyWorkingVars(substitutionResult.substitution);
-    }
-    return substitutionResult;
-  }
-  //#endregion buildSubstitution
-  //#region buildACompleteSubstitutionEvenIfNonUnifiable
-  buildCompleteSubstitutionForExistingParseNodes(substitution, nonUnifiableLogicalParseNodes) {
-    for (let i = 0; i < this.logicalSystemEHyps.length; i++) {
-      if (this.eHypUSteps[i] !== void 0 && this.eHypUSteps[i].parseNode != void 0) {
-        const hasFoundSubstitution = this.buildSubstitutionForInternalNode(
-          this.logicalSystemEHyps[i].parseNode,
-          this.eHypUSteps[i].parseNode,
-          substitution
-        );
-        if (!hasFoundSubstitution)
-          nonUnifiableLogicalParseNodes.push(this.logicalSystemEHyps[i].parseNode);
-      }
-    }
-    if (this.uProofStep.parseNode != void 0 && this.assertion.parseNode) {
-      const hasFoundSubstitution = this.buildSubstitutionForInternalNode(
-        this.assertion.parseNode,
-        this.uProofStep.parseNode,
-        substitution
-      );
-      if (!hasFoundSubstitution)
-        nonUnifiableLogicalParseNodes.push(this.assertion.parseNode);
-    }
-    return substitution;
-  }
-  addWorkingVarsForLogicalVarsWithoutASubstitutionUsingNonUnifiableSteps(substitution, nonUnifiableLogicalParseNodes) {
-    for (let i = 0; i < this.logicalSystemEHyps.length; i++) {
-      const eHyp = this.logicalSystemEHyps[i];
-      if (this.eHypUSteps[i]?.parseNode == void 0 && eHyp.parseNode)
-        this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(eHyp.parseNode, substitution);
-    }
-    if (this.uProofStep.parseNode === void 0 && this.assertion.parseNode)
-      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(this.assertion.parseNode, substitution);
-    nonUnifiableLogicalParseNodes.forEach((nonUnifiableLogicalParseNode) => {
-      this.addWorkingVarsForLogicalVarsWithoutASubstitutionForSingleParseNode(nonUnifiableLogicalParseNode, substitution);
-    });
-  }
-  /**
-   * returns a substitution for the uProofStep given in the constructor. It will return a substitution
-   * even if the uProofStep cannot be unified. The substitution returned is complete (all logical vars
-   * have a substitution; some logical vars may be substituted with a Working Var).
-   * This method can be invoked the best possible Diagnostic, when a unification error is encountered.
-   */
-  buildACompleteSubstitutionEvenIfNonUnifiable() {
-    const substitution = /* @__PURE__ */ new Map();
-    const nonUnifiableLogicalParseNodes = [];
-    this.buildCompleteSubstitutionForExistingParseNodes(substitution, nonUnifiableLogicalParseNodes);
-    this.addWorkingVarsForLogicalVarsWithoutASubstitutionUsingNonUnifiableSteps(
-      substitution,
-      nonUnifiableLogicalParseNodes
-    );
-    return substitution;
-  }
-  //#endregion buildACompleteSubstitutionEvenIfNonUnifiable
-};
-
 // yamma/server/src/mm/DisjointVarsManager.ts
 var import_vscode_languageserver8 = __toESM(require_main4());
 var DisjointVarsManager = class {
@@ -13829,7 +14088,7 @@ var MmpGetProofStatement = class {
 };
 
 // yamma/server/src/mmp/MmpParser.ts
-var MmpParserErrorCode2 = /* @__PURE__ */ ((MmpParserErrorCode3) => {
+var MmpParserErrorCode = /* @__PURE__ */ ((MmpParserErrorCode3) => {
   MmpParserErrorCode3["unexpectedEndOfFormula"] = "unexpectedEndOfFormula";
   MmpParserErrorCode3["formulaSyntaxError"] = "formulaSyntaxError";
   MmpParserErrorCode3["firstTokenWithMoreThanTwoColumns"] = "firstTokenWithMoreThanTwoColumns";
@@ -13854,8 +14113,8 @@ var MmpParserErrorCode2 = /* @__PURE__ */ ((MmpParserErrorCode3) => {
   MmpParserErrorCode3["disjVarWithItself"] = "disjVarWithItself";
   MmpParserErrorCode3["mmFormulaNonParsable"] = "FormulaNonParsable";
   return MmpParserErrorCode3;
-})(MmpParserErrorCode2 || {});
-var MmpParserWarningCode2 = /* @__PURE__ */ ((MmpParserWarningCode3) => {
+})(MmpParserErrorCode || {});
+var MmpParserWarningCode = /* @__PURE__ */ ((MmpParserWarningCode3) => {
   MmpParserWarningCode3["missingLabel"] = "missingLabel";
   MmpParserWarningCode3["missingFormula"] = "missingFormula";
   MmpParserWarningCode3["missingRef"] = "missingRef";
@@ -13866,8 +14125,9 @@ var MmpParserWarningCode2 = /* @__PURE__ */ ((MmpParserWarningCode3) => {
   MmpParserWarningCode3["lastStatementShouldBeQed"] = "lastStatementShouldBeQED";
   MmpParserWarningCode3["missingComment"] = "missingComment";
   MmpParserWarningCode3["isDiscouraged"] = "isDiscouraged";
+  MmpParserWarningCode3["proofCompleteButWorkingVarsRemainAndNoUnusedTheoryVars"] = "proofCompleteButWorkingVarsRemainAndNoUnusedTheoryVars";
   return MmpParserWarningCode3;
-})(MmpParserWarningCode2 || {});
+})(MmpParserWarningCode || {});
 var MmpParser = class _MmpParser {
   //#region constructor
   // constructor(textToParse: string, labelToStatementMap: Map<string, LabeledStatement>,
@@ -14643,6 +14903,13 @@ var GlobalState = class {
     this.loadingATheory = false;
     /** true iff a unify() has been performed, but the cursor has not been updated yet*/
     this._isCursorPositionUpdateRequired = false;
+    /** true iff the last unification determined that the proof is complete,
+     * but it contains working variables, and there are no unused theory variables
+     * to replace them with. In this case, the user should be informed that he/she
+     * should manually replace the working variables in order to complete the proof.
+     * In most theories, this should never happen, in practice.
+     */
+    this.isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars = false;
     this.isTriggerSuggestRequired = false;
   }
   get isCursorPositionUpdateRequired() {
@@ -14817,97 +15084,6 @@ var getParserAndTokenReader = (config, mmData) => {
   const { createMmParser } = completeConfig.mm;
   const mmParser = createMmParser(mapConfigToGlobalState(completeConfig));
   return { tokenReader, mmParser };
-};
-
-// yamma/server/src/mmp/WorkingVarsUUnifierApplier.ts
-var WorkingVarsUnifierApplier = class {
-  constructor(unifier, uProof, formulaToParseNodeCache) {
-    this.formulaToParseNodeCache = formulaToParseNodeCache;
-    this.unifier = unifier;
-    this.uProof = uProof;
-  }
-  //#region applyUnifier
-  //#region applyUnifierToProofStep
-  //#region applyUnifierToSingleNode
-  invalidateParseNodeCache(mmpProofStep) {
-    if (this.formulaToParseNodeCache != void 0 && mmpProofStep.formula != void 0) {
-      const stepFormulaString = concatTokenValuesWithSpaces(mmpProofStep.formula);
-      this.formulaToParseNodeCache.invalidate(stepFormulaString);
-    }
-  }
-  applyUnifierToSingleInternalNode(parseNode) {
-    let isParseNodeChanged = false;
-    for (let i = 0; i < parseNode.parseNodes.length; i++) {
-      const child = parseNode.parseNodes[i];
-      if (GrammarManager.isInternalParseNodeForWorkingVar(child)) {
-        const workingVar = GrammarManager.getTokenValueFromInternalNode(child);
-        const substitutionForWorkingVar = this.unifier.get(workingVar);
-        if (substitutionForWorkingVar != void 0) {
-          parseNode.parseNodes.splice(i, 1, substitutionForWorkingVar);
-          isParseNodeChanged = true;
-        }
-      } else if (child instanceof InternalNode) {
-        const isChildChanged = this.applyUnifierToSingleInternalNode(child);
-        isParseNodeChanged ||= isChildChanged;
-      }
-    }
-    return isParseNodeChanged;
-  }
-  // applyUnifierToSingleNode(parseNode: InternalNode | undefined): boolean {
-  // 	let isParseNodeChanged = false;
-  // 	if (parseNode instanceof InternalNode)
-  // 		isParseNodeChanged = this.applyUnifierToSingleInternalNode(parseNode);
-  // 	return isParseNodeChanged;
-  // }
-  //#endregion applyUnifierToSingleNode
-  applyUnifierToSubstitution(mmpProofStep) {
-    mmpProofStep.substitution?.forEach((internalNode, logicalVar) => {
-      if (GrammarManager.isInternalParseNodeForWorkingVar(internalNode)) {
-        const workingVar = GrammarManager.getTokenValueFromInternalNode(internalNode);
-        const substitutionForWorkingVar = this.unifier.get(workingVar);
-        if (substitutionForWorkingVar != void 0)
-          mmpProofStep.substitution?.set(logicalVar, substitutionForWorkingVar);
-      } else
-        this.applyUnifierToSingleInternalNode(internalNode);
-    });
-  }
-  rebuildSubstitution(mmpProofStep) {
-    if (mmpProofStep.assertion != void 0) {
-      const uSubstitutionBuilder = new MmpSubstitutionBuilder(
-        mmpProofStep,
-        mmpProofStep.assertion,
-        mmpProofStep.mmpProof.outermostBlock,
-        mmpProofStep.mmpProof.workingVars,
-        mmpProofStep.mmpProof.outermostBlock.grammar,
-        []
-      );
-      const substitutionResult = uSubstitutionBuilder.buildSubstitution();
-      if (substitutionResult.hasBeenFound)
-        mmpProofStep.substitution = substitutionResult.substitution;
-    }
-  }
-  applyUnifierToProofStep(mmpProofStep) {
-    if (mmpProofStep.parseNode != void 0) {
-      const isParseNodeChanged = this.applyUnifierToSingleInternalNode(mmpProofStep.parseNode);
-      if (isParseNodeChanged) {
-        this.invalidateParseNodeCache(mmpProofStep);
-      }
-    }
-    this.rebuildSubstitution(mmpProofStep);
-  }
-  //#endregion applyUnifierToProofStep
-  /**
-   * applies the unifier in every step of this.uProof;
-   * at the end of the method, this.uProof will have all working vars
-   * replaced by the given unifier
-   */
-  applyUnifier() {
-    this.uProof.mmpStatements.forEach((uStatement) => {
-      if (uStatement instanceof MmpProofStep)
-        this.applyUnifierToProofStep(uStatement);
-    });
-  }
-  //#endregion applyUnifier
 };
 
 // yamma/server/src/stepDerivation/EHypsDerivation.ts
@@ -15329,7 +15505,7 @@ var MmToMmpConverter = class {
   }
   addComment(comment) {
     const commentContent = rebuildOriginalStringFromTokens(comment);
-    const newComment = "* " + commentContent;
+    const newComment = "* " + commentContent.slice(2);
     const newTokens = splitToTokensDefault(newComment);
     const mmpComment = new MmpComment(newTokens, newComment);
     this.mmpProof.addMmpStatement(mmpComment);
@@ -15517,7 +15693,7 @@ var MmToMmpConverter = class {
     this.stack.push(assertionStatementWithSubstitution);
   }
   //#endregion addSingleStepToMmpProof
-  addMmpStatementsFromDecompressedProof(provableStatement, mmProof) {
+  addMmpStatementsFromMmStatementsInTheProof(provableStatement, mmProof) {
     this.addEHypMmpProofSteps(provableStatement);
     mmProof.forEach((statement, i) => {
       if (statement instanceof FHyp) {
@@ -15535,21 +15711,21 @@ var MmToMmpConverter = class {
         );
     });
   }
-  getMmpStatementsFromCompressedProof(provableStatement) {
+  getMmStatementsFromCompressedProof(provableStatement) {
     const proofCompressor = new ProofCompressor([]);
-    return proofCompressor.DecompressProof(
+    const mmStatements = proofCompressor.DecompressProof(
       provableStatement,
       this.labelToStatementMap
     );
+    return mmStatements;
   }
   addMmpStatements(provableStatement) {
-    const isCompressedProof = provableStatement.Proof[0] && provableStatement.Proof[0] === "(";
-    const mmProof = isCompressedProof ? this.getMmpStatementsFromCompressedProof(provableStatement) : Verifier.GetProofStatements(
+    const mmStatements = provableStatement.hasCompressedProof ? this.getMmStatementsFromCompressedProof(provableStatement) : Verifier.GetProofStatements(
       provableStatement.Proof,
       this.labelToStatementMap,
       provableStatement.ParentBlock ?? this.outermostBlock
     );
-    this.addMmpStatementsFromDecompressedProof(provableStatement, mmProof);
+    this.addMmpStatementsFromMmStatementsInTheProof(provableStatement, mmStatements);
   }
   //#endregion addMmpStatements
   //#region addDisjStatements
@@ -16425,6 +16601,7 @@ var MmpUnifier = class {
   constructor(args) {
     // the list of TextEdit, after createMmpStatements() has been invoked
     this.textEditArray = [];
+    this.isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars = false;
     this.mmpParser = args.mmpParser;
     this.uProof = args.mmpParser.mmpProof;
     this.outermostBlock = args.mmpParser.outermostBlock;
@@ -16437,6 +16614,7 @@ var MmpUnifier = class {
     this.expectedTheoremLabel = args.expectedTheoremLabel;
     this.leftMarginForCompressedProof = args.leftMarginForCompressedProof;
     this.characterPerLine = args.characterPerLine;
+    this.globalState = args.globalState;
     this._charactersPerLine = args.characterPerLine == void 0 ? Parameters.charactersPerLine : args.characterPerLine;
     this._mmpCompressedProofCreator = args.mmpCompressedProofCreator != void 0 ? args.mmpCompressedProofCreator : (
       // new MmpCompressedProofCreatorFromUncompressedProof();
@@ -16470,7 +16648,6 @@ var MmpUnifier = class {
     const textEdits = [textEdit];
     return textEdits;
   }
-  //#region buildProofStatementIfProofIsComplete
   //#region isProofToBeGenerated
   isDiscouragedNotAProblem(diagnostics) {
     const result = (
@@ -16485,26 +16662,45 @@ var MmpUnifier = class {
     return isProofToBeGenerated;
   }
   //#endregion isProofToBeGenerated
-  buildProofStatementIfProofIsComplete(uProof, diagnostics) {
-    if (this.isProofToBeGenerated(uProof, diagnostics)) {
-      if (this.proofMode == "normal" /* normal */) {
-        const proofArray = uProof.lastMmpProofStep.proofArray(this.outermostBlock);
-        const proofStatement = new UProofStatement(proofArray, this._charactersPerLine);
-        uProof.insertProofStatement(proofStatement);
-      } else if (this.proofMode == "packed" /* packed */) {
-        const proofStatement = new MmpPackedProofStatement(uProof, 80);
-        uProof.insertProofStatement(proofStatement);
-      } else {
-        const proofStatement = this._mmpCompressedProofCreator.createMmpCompressedProof(
-          uProof,
-          this.leftMarginForCompressedProof,
-          this.characterPerLine
-        );
-        uProof.insertProofStatement(proofStatement);
-      }
+  replaceRemainingWorkingVarsWithTheoryVars() {
+    const workingVarReplacerForCompleteProof = new WorkingVarReplacerForCompleteProof(this.uProof);
+    const diagnostics = [];
+    workingVarReplacerForCompleteProof.replaceWorkingVarsWithTheoryVars(
+      this.mmpParser.formulaToParseNodeCache,
+      diagnostics
+    );
+    if (diagnostics.length > 0) {
+      this.isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars = true;
+      if (this.globalState != void 0)
+        this.globalState.isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars = true;
     }
   }
-  //#endregion buildProofStatementIfProofIsComplete
+  buildProofStatement(uProof) {
+    if (this.proofMode == "normal" /* normal */) {
+      const proofArray = uProof.lastMmpProofStep.proofArray(this.outermostBlock);
+      const proofStatement = new UProofStatement(proofArray, this._charactersPerLine);
+      uProof.insertProofStatement(proofStatement);
+    } else if (this.proofMode == "packed" /* packed */) {
+      const proofStatement = new MmpPackedProofStatement(uProof, 80);
+      uProof.insertProofStatement(proofStatement);
+    } else {
+      const proofStatement = this._mmpCompressedProofCreator.createMmpCompressedProof(
+        uProof,
+        this.leftMarginForCompressedProof,
+        this.characterPerLine
+      );
+      uProof.insertProofStatement(proofStatement);
+    }
+  }
+  ifProofCompleteReplaceRemainingWoringVarsAndBuildProofStatement() {
+    if (this.globalState)
+      this.globalState.isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars = false;
+    if (this.isProofToBeGenerated(this.uProof, this.mmpParser.diagnostics)) {
+      this.replaceRemainingWorkingVarsWithTheoryVars();
+      if (!this.isProofCompleteAndItContainsWorkingVarsAndThereAreNoUnusedTheoryVars)
+        this.buildProofStatement(this.uProof);
+    }
+  }
   /**
    * Unifies textToParse and builds a UProof and a single TextEdit to replace the whole
    * current document
@@ -16522,7 +16718,7 @@ var MmpUnifier = class {
       }
     );
     uProofTransformer.transformUProof();
-    this.buildProofStatementIfProofIsComplete(this.uProof, this.mmpParser.diagnostics);
+    this.ifProofCompleteReplaceRemainingWoringVarsAndBuildProofStatement();
     this.textEditArray = this.buildTextEditArray(uProofTransformer.uProof);
   }
   //#endregion unify
