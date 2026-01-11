@@ -16843,6 +16843,11 @@ var getChunksForCompressOrDecompressProofs = (command, mmData, proofsToReplace, 
 // src/helpers/parseForCompressOrDecompressProofs.ts
 var parseForCompressOrDecompressProofs = (mmParser, tokenReader, proofIds, all) => {
   const proofsToReplace = [];
+  const proofsFound = Object.fromEntries(
+    proofIds.map((label) => {
+      return [label, false];
+    })
+  );
   let lastLabelStart;
   mmParser.on("newLabel" /* newLabel */, () => {
     lastLabelStart = tokenReader.lastIndex;
@@ -16851,14 +16856,19 @@ var parseForCompressOrDecompressProofs = (mmParser, tokenReader, proofIds, all) 
     "newProvableStatement" /* newProvableStatement */,
     (assertionArgs) => {
       const label = assertionArgs.labeledStatement.Label;
-      if (all || proofIds.find((wantedLabel) => label === wantedLabel) !== void 0) {
+      if (all || proofsFound[label] !== void 0) {
         const start = lastLabelStart;
         const end = tokenReader.lastIndex + tokenReader.lastTokenLength;
         proofsToReplace.push({ label, start, end });
+        proofsFound[label] = true;
       }
     }
   );
   mmParser.parseFromTokenReader(tokenReader);
+  const notFound = Object.entries(proofsFound).filter(([_label, found]) => found === false).map(([label]) => `${label} not found`);
+  if (notFound.length) {
+    throw new Error(notFound.join("\n"));
+  }
   return proofsToReplace;
 };
 
