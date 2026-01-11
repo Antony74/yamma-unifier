@@ -25,4 +25,15 @@ describe('compressOrDecompressProofs', () => {
 
         expect(result).toEqual(exampleFiles['example.mm']);
     });
+
+    it(`throws if it can't find proof`, () => {
+        expect(() =>
+            compressOrDecompressProofs(
+                'compress',
+                exampleFiles['example.mm'],
+                ['th1', 'th2', 'th3', 'th4'],
+                false,
+            ),
+        ).toThrow(['th3 not found', 'th4 not found'].join('\n'));
+    });
 });
