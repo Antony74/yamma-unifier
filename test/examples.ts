@@ -67,7 +67,7 @@ export const exampleFiles = {
     'ununified.mmp': [
         '$theorem th1',
         '',
-        '* Simple example, just the rule of Modus Ponens being applied',
+        '*  Simple example, just the rule of Modus Ponens being applied',
         '',
         '1::            |- ( t + 0 ) = t',
         '2::            |- ( ( t + 0 ) = t -> ( ( t + 0 ) = t -> t = t ) )',
@@ -78,7 +78,7 @@ export const exampleFiles = {
     'unified.mmp': [
         '$theorem th1',
         '',
-        '* Simple example, just the rule of Modus Ponens being applied',
+        '*  Simple example, just the rule of Modus Ponens being applied',
         '',
         '1::a2                |- ( t + 0 ) = t',
         '2::a1                |- ( ( t + 0 ) = t -> ( ( t + 0 ) = t -> t = t ) )',
