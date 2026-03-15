@@ -1,5 +1,5 @@
 export const compressProof = (
-    hypotheses: string[],
+    mandatoryFHyps: string[],
     proof: string[],
 ): { labels: string[]; proofnumbers: number[] } => {
     const labels: string[] = [];
@@ -8,7 +8,7 @@ export const compressProof = (
 
     for (const proofStep of proof) {
         // Check if it's a mandatory hypothesis
-        const hypothesisIndex = hypotheses.indexOf(proofStep);
+        const hypothesisIndex = mandatoryFHyps.indexOf(proofStep);
         if (hypothesisIndex !== -1) {
             proofnumbers.push(hypothesisIndex + 1);
             continue;
@@ -17,10 +17,10 @@ export const compressProof = (
         // Non-mandatory hypothesis or assertion — look up or add to labels
         const labelIndex = labelToLabelIndexMap.get(proofStep);
         if (labelIndex !== undefined) {
-            proofnumbers.push(hypotheses.length + labelIndex + 1);
+            proofnumbers.push(mandatoryFHyps.length + labelIndex + 1);
         } else {
             labelToLabelIndexMap.set(proofStep, labels.length);
-            proofnumbers.push(hypotheses.length + labels.length + 1);
+            proofnumbers.push(mandatoryFHyps.length + labels.length + 1);
             labels.push(proofStep);
         }
     }
