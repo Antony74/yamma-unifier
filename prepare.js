@@ -1,6 +1,5 @@
 const { exec } = require('child_process');
 const fsp = require('fs/promises');
-const path = require('path');
 
 const execCmd = (command, options) => {
     console.log(command);

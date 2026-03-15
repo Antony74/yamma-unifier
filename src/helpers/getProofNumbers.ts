@@ -3,7 +3,7 @@
 export const getProofNumbers = (label: string, proof: string): number[] => {
     const proofnumbers: number[] = [];
     let num = 0;
-    let justgotnum = false;
+    let justGotNum = false;
     for (const item of proof) {
         if (item <= 'T') {
             const addval: number = item.charCodeAt(0) - ('A'.charCodeAt(0) - 1);
@@ -14,7 +14,7 @@ export const getProofNumbers = (label: string, proof: string): number[] => {
 
             proofnumbers.push(20 * num + addval);
             num = 0;
-            justgotnum = true;
+            justGotNum = true;
         } else if (item <= 'Y') {
             const addval: number = item.charCodeAt(0) - 'T'.charCodeAt(0);
 
@@ -23,15 +23,15 @@ export const getProofNumbers = (label: string, proof: string): number[] => {
             }
 
             num = 5 * num + addval;
-            justgotnum = false;
+            justGotNum = false;
         } // It must be Z
         else {
-            if (!justgotnum) {
+            if (!justGotNum) {
                 throw new Error('Stray Z found in compressed proof of ' + label);
             }
 
             proofnumbers.push(0);
-            justgotnum = false;
+            justGotNum = false;
         }
     }
 
