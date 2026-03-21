@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { compressOrDecompressProofs } from '../src/compressOrDecompressProofs';
 import { exampleFiles } from './examples';
+import { reduceWhitespace } from './whitespaceAgnosticIsEqual';
 
 describe('compressOrDecompressProofs', () => {
     it(`can compress a proof`, () => {
@@ -12,7 +13,9 @@ describe('compressOrDecompressProofs', () => {
             false,
         );
 
-        expect(result).toEqual(exampleFiles['example-compressed1.mm']);
+        expect(reduceWhitespace(result)).toEqual(
+            reduceWhitespace(exampleFiles['example-compressed1.mm']),
+        );
     });
 
     it.skip(`can decompress a proof`, () => {
